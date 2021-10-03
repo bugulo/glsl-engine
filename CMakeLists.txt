@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(BT)
+project(engine)
 
 find_package(Git REQUIRED)
 
@@ -18,6 +18,7 @@ if(NOT (EXISTS "${PROJECT_SOURCE_DIR}/deps/glfw/CMakeLists.txt" OR
     message(FATAL_ERROR "The submodules were not downloaded! Please update submodules and try again.")
 endif()
 
+set(CMAKE_BUILD_TYPE Debug)
 set(EXECUTABLE_OUTPUT_PATH "bin")
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
