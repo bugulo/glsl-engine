@@ -9,6 +9,8 @@
 #include "shaders.hpp"
 
 struct EngineBuffer {
+    int globalWorkGroups[3] = {1, 1, 1};
+
     int keyState[GLFW_KEY_MENU];
 };
 
@@ -125,9 +127,15 @@ int main(int argc, char **argv)
 
     // GENERATE BUFFERS
 
-    GLuint ssbo;
-    glGenBuffers(1, &ssbo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+    GLuint ibo; // Input Buffer Object
+    glGenBuffers(1, &ibo);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ibo);
+
+    GLuint wgbo; // Work Group Buffer Object
+    glGenBuffers(1, &wgbo);
+    glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, wgbo);
+    glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(((EngineBuffer){0}).globalWorkGroups), &engine_buffer.globalWorkGroups, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, wgbo);
 
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -139,11 +147,13 @@ int main(int argc, char **argv)
         // RUN COMPUTE SHADER
         glUseProgram(computeProgram);
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(EngineBuffer), &engine_buffer, GL_DYNAMIC_COPY);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ibo);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(((EngineBuffer){0}).keyState), &engine_buffer.keyState, GL_STATIC_READ);
 
         glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-        glDispatchCompute(32, 32, 1);
+        glDispatchComputeIndirect(0);
+
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         
         // DRAW COMPUTE SHADER OUTPUT
         glUseProgram(textureProgram);
@@ -161,7 +171,8 @@ int main(int argc, char **argv)
 
     glDeleteVertexArrays(1, &vao);
     glDeleteTextures(1, &texture);
-    glDeleteBuffers(1, &ssbo);
+    glDeleteBuffers(1, &ibo);
+    glDeleteBuffers(1, &wgbo);
     
     glfwTerminate();
     return 0;
