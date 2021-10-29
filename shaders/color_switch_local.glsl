@@ -6,9 +6,9 @@ shared uint done;
 
 void main() {
     if(gl_LocalInvocationIndex == 0 && gl_NumWorkGroups == 1) {
-        globalWorkSize.x = 2;
-        globalWorkSize.y = 2;
-        globalWorkSize.z = 1;
+        workGroupBuffer.x = 2;
+        workGroupBuffer.y = 2;
+        workGroupBuffer.z = 1;
         return;
     }
 

@@ -8,16 +8,18 @@ const char *engineShaderSource = R"(
 
     layout(rgba8) writeonly uniform image2D outputImage;
 
-    layout(std430, binding = 0) buffer EngineBuffer {
-        int keyState[348];
-    };
+    layout(std430, binding = 0) buffer InputBuffer {
+        int keys[348];
+    } inputBuffer;
 
-    layout(std430, binding = 1) buffer DispatchBuffer {
-        uvec3 globalWorkSize; 
-    };
+    layout(std430, binding = 1) buffer WorkGroupBuffer {
+        uint x;
+        uint y;
+        uint z; 
+    } workGroupBuffer;
 
     bool key_pressed(uint key) {
-        return keyState[key] == 1;
+        return inputBuffer.keys[key] == 1;
     }
 )";
 

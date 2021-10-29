@@ -9,7 +9,7 @@
 #include "shaders.hpp"
 
 struct EngineBuffer {
-    int globalWorkGroups[3] = {1, 1, 1};
+    int workGroups[3] = {1, 1, 1};
 
     int keyState[GLFW_KEY_MENU];
 };
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     GLuint wgbo; // Work Group Buffer Object
     glGenBuffers(1, &wgbo);
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, wgbo);
-    glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(((EngineBuffer){0}).globalWorkGroups), &engine_buffer.globalWorkGroups, GL_DYNAMIC_DRAW);
+    glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(((EngineBuffer){0}).workGroups), &engine_buffer.workGroups, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, wgbo);
 
     GLuint vao;

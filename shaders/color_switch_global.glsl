@@ -4,21 +4,21 @@ layout(local_size_x = 16) in;
 
 void main() {
     if(gl_LocalInvocationIndex == 0 && gl_NumWorkGroups == 1) {
-        globalWorkSize.x = 2;
-        globalWorkSize.y = 2;
-        globalWorkSize.z = 1;
+        workGroupBuffer.x = 2;
+        workGroupBuffer.y = 2;
+        workGroupBuffer.z = 1;
         return;
     }
 
     if(gl_GlobalInvocationID.x == 0) {
-        keyState[0] = 0;
+        inputBuffer.keys[0] = 0;
     }
 
     barrier();
 
-    while(keyState[0] < 512 * 512)
+    while(inputBuffer.keys[0] < 512 * 512)
     {
-        uint previous = atomicAdd(keyState[0], 1);
+        uint previous = atomicAdd(inputBuffer.keys[0], 1);
 
         // Calculate image position
         const uint x = previous % 512;
