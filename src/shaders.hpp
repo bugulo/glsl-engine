@@ -1,6 +1,8 @@
 const char *engineShaderSource = R"(
     #version 440 core
 
+    #extension GL_ARB_shader_ballot : enable
+
     #define KEY_A 65
     #define KEY_B 66
 
@@ -8,7 +10,7 @@ const char *engineShaderSource = R"(
 
     layout(rgba8) writeonly uniform image2D outputImage;
 
-    layout(std430, binding = 0) buffer InputBuffer {
+    layout(std430, binding = 0) volatile buffer InputBuffer {
         int keys[348];
     } inputBuffer;
 
