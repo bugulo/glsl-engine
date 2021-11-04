@@ -3,7 +3,7 @@ ${engineShader}
 layout(local_size_x = 16) in;
 
 void main() {
-    if(gl_LocalInvocationIndex == 0 && gl_NumWorkGroups == 1) {
+    if(gl_LocalInvocationIndex == 0 && gl_NumWorkGroups.x == 1) {
         workGroupBuffer.x = 2;
         workGroupBuffer.y = 2;
         workGroupBuffer.z = 1;
