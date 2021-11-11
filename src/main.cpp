@@ -1,4 +1,5 @@
 #include <regex>
+#include <iostream>
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -8,17 +9,25 @@
 
 #include "shaders.hpp"
 
-struct EngineBuffer {
+struct EngineBuffer 
+{
     int workGroups[3] = {1, 1, 1};
 
     int keyState[GLFW_KEY_MENU];
+};
+
+enum ProgramType 
+{
+    DEFAULT = 0,
+    COMPUTE = 1
 };
 
 EngineBuffer engine_buffer;
 
 #define exit_with_error(code, string, ...) { fprintf(stderr, string, __VA_ARGS__); exit(code); }
 
-void validate_program(GLuint program) {
+void validate_program(GLuint program) 
+{
     GLint status = 0;
     glGetProgramiv(program, GL_LINK_STATUS, &status);
     if (status != GL_TRUE) {
@@ -32,6 +41,34 @@ void validate_program(GLuint program) {
     if (status != GL_TRUE) {
         exit_with_error(1, "%s\n", "Program failed to be validated");
     }
+}
+
+GLuint compile_shader(std::string shaderSource, size_t pass, GLenum type, std::string id)
+{
+    std::stringstream buffer;
+    buffer << engineShaderSource;
+    buffer << "#define PASS_" << std::to_string(pass) << std::endl;
+    buffer << "#define PASS_" << std::to_string(pass) << "_" << id << std::endl;
+    buffer << shaderSource;
+    auto source = buffer.str().c_str();
+
+    printf("- Found %s shader, compiling...\n", id.c_str());
+
+    auto shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, NULL);
+    glCompileShader(shader);
+
+    int success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+    if(!success)
+    {
+        char error[512];
+        glGetShaderInfoLog(shader, 512, NULL, error);
+        exit_with_error(1, "[!] Failed to compile shader %s\n", error);
+    }
+
+    return shader;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -107,15 +144,40 @@ int main(int argc, char **argv)
     if(stream.fail())
         exit_with_error(1, "Failed to load specified shader file (%s)\n", computeShaderLocation);
 
-    std::stringstream buffer;
-    buffer << stream.rdbuf();
+    std::vector<GLuint> programs;
 
-    auto computeShaderString = buffer.str();
-    computeShaderString = std::regex_replace(computeShaderString, std::regex("\\$\\{engineShader\\}"), engineShaderSource);
-    auto computeShaderSource = computeShaderString.c_str();
-    
-    auto computeProgram = glCreateShaderProgramv(GL_COMPUTE_SHADER, 1, &computeShaderSource);
-    validate_program(computeProgram);
+    std::stringstream shaderBuffer;
+    shaderBuffer << stream.rdbuf();
+
+    for(size_t i = 0; i < 500; i++)
+    {
+        std::map<GLenum, GLuint> shaders;
+
+        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i)) == std::string::npos)
+            break;
+        
+        printf("Compiling pass %zu\n", i);
+
+        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i) + "_COMPUTE_SHADER") != std::string::npos)
+            shaders[GL_COMPUTE_SHADER] = compile_shader(shaderBuffer.str(), i, GL_COMPUTE_SHADER, "COMPUTE_SHADER");
+
+        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i) + "_VERTEX_SHADER") != std::string::npos)
+            shaders[GL_COMPUTE_SHADER] = compile_shader(shaderBuffer.str(), i, GL_VERTEX_SHADER, "VERTEX_SHADER");
+
+        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i) + "_FRAGMENT_SHADER") != std::string::npos)
+            shaders[GL_COMPUTE_SHADER] = compile_shader(shaderBuffer.str(), i, GL_FRAGMENT_SHADER, "FRAGMENT_SHADER");
+
+        auto program = glCreateProgram();
+        for(const auto &x : shaders)
+            glAttachShader(program, x.second);
+
+        glLinkProgram(program);
+        validate_program(program);
+        programs.push_back(program);
+
+        for(const auto &x : shaders)
+            glDeleteShader(x.second);
+    }
 
     // GENERATE OUTPUT TEXTURE
 
@@ -144,16 +206,20 @@ int main(int argc, char **argv)
     {
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // RUN COMPUTE SHADER
-        glUseProgram(computeProgram);
-
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ibo);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(((EngineBuffer){0}).keyState), &engine_buffer.keyState, GL_STATIC_READ);
 
         glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-        glDispatchComputeIndirect(0);
 
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        for(auto program : programs)
+        {
+            // RUN COMPUTE SHADER
+            glUseProgram(program);
+
+            glDispatchComputeIndirect(0);
+
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        }
         
         // DRAW COMPUTE SHADER OUTPUT
         glUseProgram(textureProgram);
@@ -167,7 +233,9 @@ int main(int argc, char **argv)
     }
 
     glDeleteProgram(textureProgram);
-    glDeleteProgram(computeProgram);
+
+    for(auto program : programs)
+        glDeleteProgram(program);
 
     glDeleteVertexArrays(1, &vao);
     glDeleteTextures(1, &texture);
