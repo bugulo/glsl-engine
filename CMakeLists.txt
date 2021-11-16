@@ -18,6 +18,8 @@ if(NOT (EXISTS "${PROJECT_SOURCE_DIR}/deps/glfw/CMakeLists.txt" OR
     message(FATAL_ERROR "The submodules were not downloaded! Please update submodules and try again.")
 endif()
 
+set(CMAKE_CXX_STANDARD 20)
+
 set(CMAKE_BUILD_TYPE Debug)
 set(EXECUTABLE_OUTPUT_PATH "bin")
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
