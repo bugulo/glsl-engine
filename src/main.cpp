@@ -7,7 +7,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "shaders.hpp"
+#include "program.hpp"
 
 struct EngineBuffer 
 {
@@ -19,52 +19,6 @@ struct EngineBuffer
 EngineBuffer engine_buffer;
 
 #define exit_with_error(code, string, ...) { fprintf(stderr, string, __VA_ARGS__); exit(code); }
-
-void validate_program(GLuint program) 
-{
-    GLint status = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if (status != GL_TRUE) {
-        char buffer[1024];
-        glGetProgramInfoLog(program, 1024, 0, buffer);
-        exit_with_error(1, "%s\n", buffer);
-    }
-
-    glValidateProgram(program);
-    glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
-    if (status != GL_TRUE) {
-        exit_with_error(1, "%s\n", "Program failed to be validated");
-    }
-}
-
-GLuint compile_shader(std::string shaderSource, size_t pass, GLenum type, std::string id)
-{
-    std::stringstream buffer;
-    buffer << engineShaderSource;
-    buffer << "#define PASS_" << std::to_string(pass) << std::endl;
-    buffer << "#define PASS_" << std::to_string(pass) << "_" << id << std::endl << std::endl;
-    buffer << shaderSource;
-    auto string = buffer.str();
-    auto source = string.c_str();
-
-    printf("- Found %s shader, compiling...\n", id.c_str());
-
-    auto shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
-
-    int success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-    if(!success)
-    {
-        char error[512];
-        glGetShaderInfoLog(shader, 512, NULL, error);
-        exit_with_error(1, "[!] Failed to compile shader %s\n", error);
-    }
-
-    return shader;
-}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -122,61 +76,33 @@ int main(int argc, char **argv)
     if(stream.fail())
         exit_with_error(1, "Failed to load specified shader file (%s)\n", computeShaderLocation);
 
-    std::vector<std::tuple<GLuint, bool>> programs;
+    std::vector<Program> programs;
 
     std::stringstream shaderBuffer;
     shaderBuffer << stream.rdbuf();
 
     for(size_t i = 0; i < 500; i++)
     {
-        std::map<GLenum, GLuint> shaders;
+        //std::map<GLenum, GLuint> shaders;
 
         if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i)) == std::string::npos)
             break;
-        
+
         printf("Compiling pass %zu\n", i);
-
-        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i) + "_COMPUTE_SHADER") != std::string::npos)
-            shaders[GL_COMPUTE_SHADER] = compile_shader(shaderBuffer.str(), i, GL_COMPUTE_SHADER, "COMPUTE_SHADER");
-
-        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i) + "_VERTEX_SHADER") != std::string::npos)
-            shaders[GL_VERTEX_SHADER] = compile_shader(shaderBuffer.str(), i, GL_VERTEX_SHADER, "VERTEX_SHADER");
-
-        if(shaderBuffer.str().find("#ifdef PASS_" + std::to_string(i) + "_FRAGMENT_SHADER") != std::string::npos)
-            shaders[GL_FRAGMENT_SHADER] = compile_shader(shaderBuffer.str(), i, GL_FRAGMENT_SHADER, "FRAGMENT_SHADER");
-
-        auto program = glCreateProgram();
-        for(const auto &x : shaders)
-            glAttachShader(program, x.second);
-
-        glLinkProgram(program);
-        validate_program(program);
-
-        /*GLint uniforms;
-        glGetProgramiv(program, GL_ACTIVE_UNIFORMS, &uniforms);
-        for(GLint i = 0; i < uniforms; ++i) {
-            GLint size;
-            GLsizei length;
-            GLenum type;
-            GLchar buffer[201] = {0};
-            glGetActiveUniform(program, i, 200, &length, &size, &type, buffer);
-            auto location = glGetUniformLocation(program, buffer);
-            printf("%s, %d, %d, %d\n", buffer, location, type, GL_IMAGE_2D);
-        }*/
-
-        programs.push_back(std::make_tuple(program, shaders.contains(GL_COMPUTE_SHADER)));
-
-        for(const auto &x : shaders)
-            glDeleteShader(x.second);
+        auto program = Program();
+        if(program.compile(shaderBuffer.str(), i))
+            programs.push_back(program);
+        else
+            exit_with_error(1, "Failed to compile pass (%d)\n", i);
     }
 
     // GENERATE OUTPUT TEXTURE
 
-    GLuint texture;
+    /*GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-    glClearTexImage(texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glClearTexImage(texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);*/
 
     // GENERATE BUFFERS
 
@@ -215,6 +141,20 @@ int main(int argc, char **argv)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(0);
 
+    /*unsigned int testt;
+    glGenTextures(1, &testt);
+    glBindTexture(GL_TEXTURE_2D, testt);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, testt, 0);*/
+
     while(!glfwWindowShouldClose(context))
     {
         glClear(GL_COLOR_BUFFER_BIT);
@@ -222,34 +162,104 @@ int main(int argc, char **argv)
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ibo);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(((EngineBuffer){0}).keyState), &engine_buffer.keyState, GL_STATIC_READ);
 
-        for(auto const& [program, compute] : programs)
-        {
-            glUseProgram(program);
+        /*auto program1 = programs[0];
+        auto program2 = programs[1];
+        auto program3 = programs[2];
+        auto program4 = programs[3];
 
-            if(compute)
+        auto texture1 = Program::textureRegistry["testTexture1"];
+        auto texture2 = Program::textureRegistry["testTexture2"];
+        auto texture3 = Program::textureRegistry["testTexture3"];
+
+        glUseProgram(program1.programId);
+        glDispatchComputeIndirect(0);
+        glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glFinish();
+
+        glUseProgram(program2.programId);
+        glBindImageTexture(0, texture1, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+        glUniform1i(0, 0);
+        glBindImageTexture(1, texture2, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+        glUniform1i(1, 1);
+        glDispatchComputeIndirect(0);
+        glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glFinish();
+
+        glUseProgram(program3.programId);
+        glBindVertexArray(vao);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1);
+        glUniform1i(0, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2);
+        glUniform1i(1, 1);
+        glBindFramebuffer(GL_FRAMEBUFFER, program3.framebufferId);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glFinish();
+
+        glUseProgram(program4.programId);
+        glBindVertexArray(vao);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture3);
+        glUniform1i(0, 0);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, 0);
+        glFinish();*/
+
+        for(auto const& program : programs)
+        {
+            glUseProgram(program.programId);
+
+            if(program.hasFramebuffer)
+                glBindFramebuffer(GL_FRAMEBUFFER, program.framebufferId);
+
+            int i = 0;
+            for(auto const& [name, location, type] : program.myTextures)
+            {
+                //printf("%s, %d\n", name.c_str(), Program::textureRegistry[name]);
+                if(type == GL_IMAGE_2D)
+                {
+                    glUniform1i(location, i);
+                    glBindImageTexture(i, Program::textureRegistry[name], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+                } 
+                else if(type == GL_SAMPLER_2D)
+                {
+                    glUniform1i(location, i);
+                    //glActiveTexture(GL_TEXTURE0 + i);
+                    //glBindTexture(GL_TEXTURE_2D, Program::textureRegistry[name]);
+                    glBindTextureUnit(i, Program::textureRegistry[name]);
+                }
+                    
+                i++;
+            }
+
+            if(program.isCompute)
             {
                 glDispatchComputeIndirect(0);
                 glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             }
-            else 
+            else
             {
                 glBindVertexArray(vao);
-                glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, texture);
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, 0);
             }
+
+            glBindFramebuffer(GL_FRAMEBUFFER , 0);
         }
         
         glfwPollEvents();
         glfwSwapBuffers(context);
     }
 
-    for(auto const& [program, _compute] : programs)
-        glDeleteProgram(program);
+    for(auto const& program : programs)
+    {
+        glDeleteProgram(program.programId);
+        if(program.hasFramebuffer)
+            glDeleteFramebuffers(1, &program.framebufferId);
+    }
 
     glDeleteVertexArrays(1, &vao);
-    glDeleteTextures(1, &texture);
+    //glDeleteTextures(1, &texture);
     glDeleteBuffers(1, &ibo);
     glDeleteBuffers(1, &wgbo);
     glDeleteBuffers(1, &dcbo);

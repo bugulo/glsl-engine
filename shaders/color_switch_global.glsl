@@ -26,6 +26,9 @@
     #ifdef PASS_1_COMPUTE_SHADER
         layout(local_size_x = 16) in;
 
+        layout(location = 0, rgba8) uniform image2D testTexture1;
+        layout(location = 1, rgba8) uniform image2D testTexture2;
+
         void main() {
             do
             {
@@ -44,11 +47,14 @@
                 const ivec3 position = ivec3(gl_LocalInvocationID) + ivec3(x, y, 0);
 
                 if(key_pressed(KEY_B)) {
-                    imageStore(outputImage, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
+                    imageStore(testTexture1, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
+                    imageStore(testTexture2, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
                 } else if(key_pressed(KEY_A)) {
-                    imageStore(outputImage, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
+                    imageStore(testTexture1, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
+                    imageStore(testTexture2, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
                 } else {
-                    imageStore(outputImage, position.xy, vec4(0, 0, 0, 1.0f));
+                    imageStore(testTexture1, position.xy, vec4(0, 0, 0, 1.0f));
+                    imageStore(testTexture2, position.xy, vec4(1, 1, 1, 1.0f));
                 }
             } while(true);
         }
@@ -66,13 +72,39 @@
     #endif
 
     #ifdef PASS_2_FRAGMENT_SHADER
-        uniform sampler2D inputImage;
+        uniform sampler2D testTexture1;
+        uniform sampler2D testTexture2;
 
-        layout(location = 0) out vec4 fragColor;
+        out vec4 testTexture3;
 
         void main() {
             vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y);
-            fragColor = texture(inputImage, position);
+            if(position.x > position.y)
+                testTexture3 = texture(testTexture1, position);
+            else
+                testTexture3 = texture(testTexture2, position);
+        }
+    #endif
+#endif
+
+#ifdef PASS_3
+    #ifdef PASS_3_VERTEX_SHADER
+        layout (location = 0) in vec3 aPos;
+
+        void main()
+        {
+            gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+        }
+    #endif
+
+    #ifdef PASS_3_FRAGMENT_SHADER
+        uniform sampler2D testTexture3;
+
+        out vec4 defaultOutput;
+
+        void main() {
+            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y);
+            defaultOutput = texture(testTexture3, position);
         }
     #endif
 #endif

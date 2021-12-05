@@ -1,3 +1,6 @@
+#ifndef SHADER_H
+#define SHADER_H
+
 const char *engineShaderSource = R"(
 #version 440 core
 
@@ -15,8 +18,6 @@ struct DrawCommand {
     uint baseVertex;
     uint baseInstance;
 };
-
-layout(location = 0, rgba8) uniform image2D outputImage;
 
 layout(std430, binding = 0) volatile buffer InputBuffer {
     int keys[348];
@@ -66,3 +67,5 @@ bool key_pressed(uint key) {
 }
 
 )";
+
+#endif
