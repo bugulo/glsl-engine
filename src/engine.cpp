@@ -1,5 +1,6 @@
 #include "engine.hpp"
 
+#include <regex>
 #include <cstdarg>
 #include <fstream>
 #include <sstream>
@@ -13,6 +14,8 @@ Engine::Engine(int width, int height)
 {
     this->width = width;
     this->height = height;
+
+    this->verbose = true;
 }
 
 Engine::~Engine()
@@ -59,9 +62,10 @@ void Engine::init()
     glGenBuffers(1, &this->ibo); // Input Buffer Object
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ibo);
 
+    int workGroups[3] = {1, 1, 1};
     glGenBuffers(1, &this->wgbo); // Work Group Buffer Object
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, this->wgbo);
-    glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(((EngineBuffer){0}).workGroups), &this->buffer.workGroups, GL_DYNAMIC_DRAW);
+    glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(workGroups), &workGroups, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, this->wgbo);
 
     glGenBuffers(1, &this->dcbo); // Draw Command Buffer Object
@@ -94,29 +98,27 @@ void Engine::update()
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->ibo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(((EngineBuffer){0}).keyState), &this->buffer.keyState, GL_STATIC_READ);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(this->keyState), &this->keyState, GL_STATIC_READ);
 
     for(auto pass : this->passes)
     {
-        glUseProgram(pass->programId);
+        glUseProgram(pass->getProgramId());
 
         if(pass->getFramebufferId() != 0)
             glBindFramebuffer(GL_FRAMEBUFFER, pass->getFramebufferId());
 
         int i = 0;
-        for(auto const& [name, location, type] : pass->textures)
+        for(auto const& [texture, type, location] : pass->inputTextures)
         {
             if(type == GL_IMAGE_2D)
             {
                 glUniform1i(location, i);
-                glBindImageTexture(i, this->textures[name], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+                glBindImageTexture(i, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
             } 
             else if(type == GL_SAMPLER_2D)
             {
                 glUniform1i(location, i);
-                glActiveTexture(GL_TEXTURE0 + i);
-                glBindTexture(GL_TEXTURE_2D, this->textures[name]);
-                glBindTextureUnit(i, this->textures[name]);
+                glBindTextureUnit(i, texture);
             }
                 
             i++;
@@ -145,21 +147,20 @@ void Engine::destroy()
     if(this->context == nullptr)
         return;
 
-    for(auto pass : this->passes)
-    {
-        auto framebuffer = pass->getFramebufferId();
-        if(framebuffer != 0)
-            glDeleteFramebuffers(1, &framebuffer);
-    }
+    for(auto pass : this->passes)        
+        delete pass;
+
+    for(auto const& [name, id] : this->textures)
+        glDeleteTextures(1, &id);
 
     glDeleteVertexArrays(1, &this->vao);
-    //glDeleteTextures(1, &texture);
     glDeleteBuffers(1, &this->ibo);
     glDeleteBuffers(1, &this->wgbo);
     glDeleteBuffers(1, &this->dcbo);
     glDeleteBuffers(1, &this->vbo);
     glDeleteBuffers(1, &this->ebo);
     
+    glfwDestroyWindow(this->context);
     glfwTerminate();
 
     this->context = nullptr;
@@ -176,9 +177,9 @@ bool Engine::shouldClose()
 void Engine::key_callback(GLFWwindow *context, int key, int scancode, int action, int mods)
 {
     if(action == 1 || action == 2)
-        this->buffer.keyState[key] = 1;
+        this->keyState[key] = 1;
     else if(action == 0)
-        this->buffer.keyState[key] = 0;
+        this->keyState[key] = 0;
 }
 
 void Engine::loadShader(std::string filename)
@@ -206,25 +207,29 @@ void Engine::loadShader(std::string filename)
     }
 }
 
-GLuint Engine::createTexture(std::string name, int width, int height)
+GLuint Engine::createTexture(std::string name)
 {
     if(this->context == nullptr)
         throw std::runtime_error("Context is not initialized");
 
     if(this->textures.contains(name))
     {
-        this->print("Loaded texture %s with ID: %d\n", name.c_str(), this->textures[name]);
+        this->print("- Loaded texture %s with ID: %d\n", name.c_str(), this->textures[name]);
         return this->textures[name];
     }
 
-    this->print("Generating texture %s\n", name.c_str());
+    this->print("- Creating texture: %s\n", name.c_str());
+
+    std::cmatch match;
+    if(!std::regex_match(name.c_str(), match, std::regex("^\\S+_(\\d+)x(\\d+)$")))
+        throw std::runtime_error("Failed to generate texture, Reason: Invalid texture name");
 
     GLuint texture;
     glCreateTextures(GL_TEXTURE_2D, 1, &texture);
-    glTextureStorage2D(texture, 1, GL_RGBA8, width, height);
+    glTextureStorage2D(texture, 1, GL_RGBA8, stoi(match[1]), stoi(match[2]));
     
     this->textures[name] = texture;
-    this->print("Loaded texture %s with ID: %d\n", name.c_str(), texture);
+    this->print("- Loaded texture: %s with ID: %d\n", name.c_str(), texture);
     return texture;
 }
 
@@ -234,7 +239,7 @@ void Engine::print(const char *format, ...)
         return;
 
     va_list args;
-	va_start(args, format);
-	vprintf(format, args);
-	va_end(args);
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
 }

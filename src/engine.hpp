@@ -12,53 +12,89 @@
 
 #define MAX_PASS_COUNT 100
 
-struct EngineBuffer 
-{
-    int workGroups[3] = {1, 1, 1};
-
-    int keyState[GLFW_KEY_MENU];
-};
-
 class Pass;
 
 class Engine
 {
 public:
+    /*!
+     * @brief Engine constructor
+     * @param width Window width
+     * @param height Window height
+     */
     Engine(int width, int height);
+
+    //! Engine destructor
     ~Engine();
 
+    /*!
+     * @brief Upload shader into the engine and compile it 
+     * @param filename Path to the shader file
+     */
     void loadShader(std::string filename);
 
+    //! Initialize engine
     void init();
+
+    //! Update engine state (Run all passes one by one)
     void update();
+
+    //! Free resources allocated by engine
     void destroy();
 
+    //! Whether the window/context was closed
     bool shouldClose();
 
+    //! Whether the engine standard output should be verbose
     bool verbose = false;
 
+    //! Print message to standard output if verbose is turned on
     void print(const char *format, ...);
 
-    GLuint createTexture(std::string name, int width, int height);
+    /*!
+     * @brief Create texture
+     * @param name Texture name, format: name_$(sizeX)x$(sizeY) 
+     * @return OpenGL texture ID
+     */
+    GLuint createTexture(std::string name);
 private:
+    //! Window width
     int width;
+
+    //! Window height
     int height;
 
+    //! OpenGL context
     GLFWwindow *context = nullptr;
 
-    EngineBuffer buffer;
+    //! State of keys and buttons
+    int keyState[GLFW_KEY_MENU] = {0};
 
+    //! Key state change callback
     void key_callback(GLFWwindow *context, int key, int scancode, int action, int mods);
 
+    //! List of compiled pass instances
     std::vector<Pass*> passes;
 
+    //! Input Buffer Object
     GLuint ibo;
+
+    //! Work Group Buffer Object
     GLuint wgbo;
+
+    //! Draw Command Buffer Object
     GLuint dcbo;
+
+    //! Vertex Array Object
     GLuint vao;
+
+    //! Vertex Buffer Object
     GLuint vbo;
+
+    //! Element Buffer Object
     GLuint ebo;
 
+    //! Map of created textures and it's ids
     std::map<std::string, GLuint> textures;
 };
 
