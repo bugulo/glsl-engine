@@ -26,8 +26,8 @@
     #ifdef PASS_1_COMPUTE_SHADER
         layout(local_size_x = 16) in;
 
-        layout(location = 0, rgba8) uniform image2D testTexture1;
-        layout(location = 1, rgba8) uniform image2D testTexture2;
+        layout(location = 0, rgba8) uniform image2D testTexture1_500x500;
+        layout(location = 1, rgba8) uniform image2D testTexture2_500x500;
 
         void main() {
             do
@@ -47,14 +47,14 @@
                 const ivec3 position = ivec3(gl_LocalInvocationID) + ivec3(x, y, 0);
 
                 if(key_pressed(KEY_B)) {
-                    imageStore(testTexture1, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
-                    imageStore(testTexture2, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
+                    imageStore(testTexture1_500x500, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
+                    imageStore(testTexture2_500x500, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
                 } else if(key_pressed(KEY_A)) {
-                    imageStore(testTexture1, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
-                    imageStore(testTexture2, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
+                    imageStore(testTexture1_500x500, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
+                    imageStore(testTexture2_500x500, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
                 } else {
-                    imageStore(testTexture1, position.xy, vec4(0, 0, 0, 1.0f));
-                    imageStore(testTexture2, position.xy, vec4(1, 1, 1, 1.0f));
+                    imageStore(testTexture1_500x500, position.xy, vec4(0, 0, 0, 1.0f));
+                    imageStore(testTexture2_500x500, position.xy, vec4(1, 1, 1, 1.0f));
                 }
             } while(true);
         }
@@ -72,17 +72,17 @@
     #endif
 
     #ifdef PASS_2_FRAGMENT_SHADER
-        uniform sampler2D testTexture1;
-        uniform sampler2D testTexture2;
+        uniform sampler2D testTexture1_500x500;
+        uniform sampler2D testTexture2_500x500;
 
-        out vec4 testTexture3;
+        out vec4 testTexture3_500x500;
 
         void main() {
             vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y);
             if(position.x > position.y)
-                testTexture3 = texture(testTexture1, position);
+                testTexture3_500x500 = texture(testTexture1_500x500, position);
             else
-                testTexture3 = texture(testTexture2, position);
+                testTexture3_500x500 = texture(testTexture2_500x500, position);
         }
     #endif
 #endif
@@ -98,13 +98,13 @@
     #endif
 
     #ifdef PASS_3_FRAGMENT_SHADER
-        uniform sampler2D testTexture3;
+        uniform sampler2D testTexture3_500x500;
 
         out vec4 defaultOutput;
 
         void main() {
             vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y);
-            defaultOutput = texture(testTexture3, position);
+            defaultOutput = texture(testTexture3_500x500, position);
         }
     #endif
 #endif
