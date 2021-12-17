@@ -1,3 +1,7 @@
+layout(std430, binding = 5) volatile buffer MyBuffer {
+    uint counter;
+} myBuffer;
+
 #ifdef PASS_0
     #ifdef PASS_0_COMPUTE_SHADER
         layout(local_size_x = 1) in;
@@ -30,11 +34,16 @@
         layout(location = 1, rgba8) uniform image2D testTexture2_500x500;
 
         void main() {
+            if(gl_LocalInvocationID.x == 0)
+                myBuffer.counter = 0;
+
+            barrier();
+            
             do
             {
                 uint previous;
                 if(gl_LocalInvocationID.x == 0)
-                    previous = atomicAdd(inputBuffer.keys[0], 16);
+                    previous = atomicAdd(myBuffer.counter, 16);
 
                 previous = readFirstInvocationARB(previous);
 

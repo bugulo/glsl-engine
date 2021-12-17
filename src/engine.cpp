@@ -9,6 +9,7 @@
 #include <GL/glew.h>
 
 #include "pass.hpp"
+#include "buffer.hpp"
 
 Engine::Engine(int width, int height)
 {
@@ -104,6 +105,9 @@ void Engine::update()
     {
         glUseProgram(pass->getProgramId());
 
+        for(auto const& [buffer, point] : pass->buffers)
+            buffer->bind(point);
+
         if(pass->getFramebufferId() != 0)
             glBindFramebuffer(GL_FRAMEBUFFER, pass->getFramebufferId());
 
@@ -149,6 +153,9 @@ void Engine::destroy()
 
     for(auto pass : this->passes)        
         delete pass;
+
+    for(auto const& [name, buffer] : this->buffers)
+        delete buffer;
 
     for(auto const& [name, id] : this->textures)
         glDeleteTextures(1, &id);
@@ -231,6 +238,25 @@ GLuint Engine::createTexture(std::string name)
     this->textures[name] = texture;
     this->print("- Loaded texture: %s with ID: %d\n", name.c_str(), texture);
     return texture;
+}
+
+Buffer* Engine::createBuffer(std::string name, int size)
+{
+    if(this->context == nullptr)
+        throw std::runtime_error("Context is not initialized");
+    
+    if(this->buffers.contains(name))
+    {
+        this->print("- Loaded buffer %s with ID: %d\n", name.c_str(), this->buffers[name]->getId());
+        return this->buffers[name];
+    }
+
+    this->print("- Creating buffer: %s\n", name.c_str());
+
+    auto buffer = new Buffer(this, name, size);
+    this->buffers[name] = buffer;
+    this->print("- Loaded buffer: %s with ID: %d\n", name.c_str(), buffer->getId());
+    return buffer;
 }
 
 void Engine::print(const char *format, ...)

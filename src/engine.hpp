@@ -13,6 +13,7 @@
 #define MAX_PASS_COUNT 100
 
 class Pass;
+class Buffer;
 
 class Engine
 {
@@ -57,6 +58,14 @@ public:
      * @return OpenGL texture ID
      */
     GLuint createTexture(std::string name);
+
+    /*!
+     * @brief Create buffer
+     * @param name Buffer name
+     * @param size Size of the buffer
+     * @return Buffer instance
+     */
+    Buffer* createBuffer(std::string name, int size);
 private:
     //! Window width
     int width;
@@ -96,6 +105,9 @@ private:
 
     //! Map of created textures and it's ids
     std::map<std::string, GLuint> textures;
+
+    //! Map of created buffers and it's ids
+    std::map<std::string, Buffer*> buffers;
 };
 
 #endif

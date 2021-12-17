@@ -11,6 +11,7 @@
 #include "engine.hpp"
 
 class Engine;
+class Buffer;
 
 class Pass
 {
@@ -30,6 +31,9 @@ public:
 
     //! List of program's input textures, it's type and location
     std::vector<std::tuple<GLuint, GLenum, GLuint>> inputTextures;
+
+    //! List of program's buffers
+    std::vector<std::tuple<Buffer*, int>> buffers;
 
     //! Get OpenGL program ID
     GLuint getProgramId();

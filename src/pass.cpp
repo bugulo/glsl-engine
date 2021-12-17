@@ -10,6 +10,7 @@
 
 #include "engine.hpp"
 #include "shaders.hpp"
+#include "buffer.hpp"
 
 Pass::Pass(Engine *engine, int index)
 {
@@ -134,6 +135,26 @@ void Pass::compile(std::string source)
             auto texture = this->engine->createTexture(name);
             glNamedFramebufferTexture(this->framebuffer, GL_COLOR_ATTACHMENT0 + location, texture, 0);
         }
+    }
+
+    GLint bufferCount;
+    glGetProgramInterfaceiv(program, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &bufferCount);
+    for(GLint i = 0; i < bufferCount; ++i) 
+    {
+        GLenum props[3] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
+        GLint params[3] = {0};
+
+        GLchar buffer[201] = {}; // TODO: we should fetch max length from gpu
+        glGetProgramResourceName(program, GL_SHADER_STORAGE_BLOCK, i, 201, nullptr, buffer);
+        glGetProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, i, 3, props, 3, nullptr, params);
+
+        // Skip builtin buffers
+        if(strcmp(buffer, "InputBuffer") == 0 || strcmp(buffer, "DrawCommandBuffer") == 0 ||
+           strcmp(buffer, "WorkGroupBuffer") == 0 || strcmp(buffer, "VertexBuffer") == 0 || 
+           strcmp(buffer, "ElementBuffer") == 0)
+            continue;
+
+        this->buffers.push_back(std::make_tuple(engine->createBuffer(buffer, params[1]), params[0]));
     }
 
     this->program = program;
