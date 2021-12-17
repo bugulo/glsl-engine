@@ -103,7 +103,7 @@
         out vec4 defaultOutput;
 
         void main() {
-            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y);
+            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y) / 512;
             defaultOutput = texture(testTexture3_500x500, position);
         }
     #endif

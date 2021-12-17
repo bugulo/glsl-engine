@@ -127,16 +127,13 @@ void Pass::compile(std::string source)
 
     if(outputs.size() != 0 && std::get<1>(outputs[0]) != "defaultOutput")
     {
-        glGenFramebuffers(1, &this->framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, this->framebuffer);
+        glCreateFramebuffers(1, &this->framebuffer);
 
         for(auto const& [location, name] : outputs)
         {
             auto texture = this->engine->createTexture(name);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + location, GL_TEXTURE_2D, texture, 0);
+            glNamedFramebufferTexture(this->framebuffer, GL_COLOR_ATTACHMENT0 + location, texture, 0);
         }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     this->program = program;
