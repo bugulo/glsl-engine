@@ -25,9 +25,8 @@ GPU má radu využití, obzvlášť vykresľovanie, ale aj napríklad strojové 
 \subsection{Jadro}
 GPU podobne ako aj CPU sa skladá z jadier. 
 
-\begin{itemize}
-  \item{\bf Jadro \rm je samostatná výpočetná jednotka, ktorá prijíma inštrukcie pracujúce s nejakými dátami a vykonáva výpočty alebo operácie pre uspokojenie týchto inštrukcií.}
-\end{itemize}
+\subsubsection*{Definícia}
+\bf Jadro \rm je samostatná výpočetná jednotka, ktorá prijíma inštrukcie pracujúce s nejakými dátami a vykonáva výpočty alebo operácie pre uspokojenie týchto inštrukcií.
 
 \subsection*{Jadro CPU}
 CPU jadro je schopné širokého spektra operácií a vysporiadava sa s tokom inštrukcií. Viaceré programy súperia o výpočetný čas, ktorý im je prideľovaný operačným systémom. Inštrukcie pracujú s dátami uloženými v pamäti RAM. Tento prenos je relatívne pomalý nakoľko pamäť RAM nieje súčasťou CPU. Z toho dôvodu si CPU uchováva niektoré dáta vo vyrovnávacej pamäti, takzvanej CPU cache, za účelom minimalizácie prístupu k pamäti RAM.
@@ -41,7 +40,7 @@ GPU jadro je na druhej strane navrhnuté pre prácu s datovými tokmi. Jednotliv
 Spracovanie veľkého množstva dát častokrát znamená vykonávanie rovnakej činnosti nad rôznymi dátami, častokrát definovanej malým počtom inštrukcií. Pre takéto spracovanie je teda výhodný paralelizmus a vysoký počet jadier. Pre príklad môžeme uviesť vykresľovanie objektov, kde sa vykonáva ten istý algoritmus nad potencionálne obrovským počtom objektov.
 
 \subsection*{Časti jadra}
-V čom spočíva efektivita GPU jadier oproti CPU jadrám? Na to aby bolo možné túto otázku zodpovedať, je potrebné začať rozložením častí CPU jadra.
+Efektivita GPU jadier spočíva v ich značne obmedzenej funkcionalite.
 
 \begin{figure}[H]
 	\centering
@@ -52,7 +51,7 @@ V čom spočíva efektivita GPU jadier oproti CPU jadrám? Na to aby bolo možn�
 
 Jadro CPU funguje na princípe fetch/decode/execute. Teda načíta inštrukciu - fetch, dekóduje ju - decode a následne vykoná - execute. Stav procesoru, teda obsahy registrov a programový čítač je uložený v execution kontexte. Data cache obsahuje lineárne časti pamäte RAM, ktoré si CPU dočasne uchováva pomocou prefetcheru za účelom minimalizácie k jej prístupu, keďže ako už bolo spomenuté, je to relatívne pomalé a CPU potrebuje inštrukcie odbavovať čo najrýchlejšie. Pre zvýšenie efektivity CPU taktiež využíva predikciu vetvenia, kde sa snaží CPU uhádnuť smer vetvy, predtým ako je to definitívne známe. Posledná časť je vykonávanie inštrukcií v inom ako ich definovanom poradí. Pokiaľ procesor čaká na dokončenie nejakej inštrukcie, je možné medzitým vykonať následujúce inštrukcie, ktoré na nej nezávisia. To závisí od dát a jednotiek s ktorými inštrukcia pracuje.
 
-Funkcionalita ktorú obsahujú CPU jadrá prináša so sebou navýšenie réžie. Keďže GPU dnes dosahujú tisíce jadier, je táto réžia neprípustná. Ako už bolo povedané v popise GPU jadra, viz. \ref{gpulogic}, je účelom jadier paralelne vykonávať rovnakú činnosť. Nieje teda nutné aby každé GPU jadro obsahovalo podobné časti a funkcionalitu ako CPU jadro.
+Funkcionalita ktorú obsahujú CPU jadrá prináša so sebou navýšenie réžie. Keďže GPU dnes dosahujú tisíce jadier, je táto réžia neprípustná. Ako už bolo povedané v popise GPU jadra, viz. sekcia \ref{gpulogic}, je účelom jadier paralelne vykonávať rovnakú činnosť. Nieje teda nutné aby každé GPU jadro obsahovalo podobné časti a funkcionalitu ako CPU jadro.
 
 \begin{figure}[H]
 	\centering
@@ -64,9 +63,8 @@ Funkcionalita ktorú obsahujú CPU jadrá prináša so sebou navýšenie réžie
 Jadro GPU funguje taktiež na princípe fetch/decode/execute. Jedným z rozdielov medzi GPU a CPU je ten, že GPU dostane úlohu, respektíve program, a čaká sa na jej výsledok. Programov na CPU beží veľa naraz, niektoré nikdy nekončia, niektoré vykonávajú akcie počas ktorých môžu byť odložené a spustené neskôr. GPU jadro vďaka tomu nepotrebuje tak pokročilé mechanizmy na zefektívnenie toku inštrukcií. Samotné GPU jadro teda načíta inštrukciu ktorú má vykonať. Obsahuje viacero aritmetických logických jednotiek - ALU a bloky kontextov, ktoré tieto ALU využívajú. Tento princíp sa nazýva SIMD - Single Instruction Multiple Data. Kontexty majú vlastné dáta ale aj zdieľané medzi sebou.
 
 \label{pixelex}
-\begin{itemize}
-  \item{Príklad využita viacerých kontextov a výpočetných jednotiek môže byť napríklad výpočet 8 pixelov na obrazovke. Jadro si načíta inštrukciu pre výpočet farby pixelu. Každý z týchto 8 pixelov má vlastný context, ktorý obsahuje napríklad jeho pozíciu. Jednotlivé kontexty jadro spracuje paralelne pomocou dostupných ALU jednotiek. Počet jednotiek ALU a kontextov v jednotlivých jadrách závisí od samotnej GPU.}
-\end{itemize}
+\subsubsection*{Príklad}
+Príklad využita viacerých kontextov a výpočetných jednotiek môže byť napríklad výpočet 8 pixelov na obrazovke. Jadro si načíta inštrukciu pre výpočet farby pixelu. Každý z týchto 8 pixelov má vlastný context, ktorý obsahuje napríklad jeho pozíciu. Jednotlivé kontexty jadro spracuje paralelne pomocou dostupných ALU jednotiek. Počet jednotiek ALU a kontextov v jednotlivých jadrách závisí od samotnej GPU.
 
 \begin{figure}[H]
 	\centering
@@ -75,10 +73,10 @@ Jadro GPU funguje taktiež na princípe fetch/decode/execute. Jedným z rozdielo
 	\label{gpucores}
 \end{figure}
 
-Na obrázku \ref{gpucores} je možné vidiet predstavu viacero GPU jadier, kde môžeme vidieť 16 jadier. Každé jadro obsahuje 4 bloky kontextov, kde každý blok obsahuje 8 kontextov. V prípade aplikácie príkladu o pixeloch \ref{pixelex} na tento obrázok, by sme mohli paralelene vypočítať farbu 512 pixelov.
+Na obrázku \ref{gpucores} je možné vidiet predstavu viacero GPU jadier, kde môžeme vidieť 16 jadier. Každé jadro obsahuje 4 bloky kontextov, kde každý blok obsahuje 8 kontextov. V prípade aplikácie príkladu o pixeloch, viz. \ref{pixelex}, na tento obrázok, by bolo možné paralelene vypočítať farbu 512 pixelov.
 
 \begin{equation}
-	16 * 4 * 8 = 512
+	16 . 4 . 8 = 512
 	\label{eq:pixeleq}
 \end{equation}
 
@@ -99,10 +97,10 @@ Pracovné skupiny sú definované v 3D priestore. Akákoľvek z osí priestoru m
   \item{\bf Lokálna skupina \rm je pracovná skupina, ktorej jednotky predstavujú spustenie programu, ktoré využívajú svoju pozíciu v priestore a častokrát pracujú s jemne odlišnými dátami. Lokálne skupiny sú vykonávané nezávisle na sebe, ale samotné jednotky lokálnej skupiny je možné medzi sebou synchronizovať.}
 \end{itemize}
 
-V prípade vykonania pracovných skupín na základe obrázku \ref{workgroups}, teda globálna skupina veľkosti (X=2, Y=3, Z=3) a lokálna skupina veľkosti (X=7, Y=5, Z=3), by sme dostali 1890 jednotlivých spustení programu, kde v každom spustení môžeme pracovať s inými dátami.
+V prípade vykonania pracovných skupín na základe obrázku \ref{workgroups}, teda globálna skupina veľkosti (X=2, Y=3, Z=3) a lokálna skupina veľkosti (X=7, Y=5, Z=3), by bol výsledný počet spustení programu 1890, kde v každom spustení môžeme pracovať s inými dátami.
 
 \begin{equation}
-	(2*3*3) * (7*5*3) = 1890
+	(2.3.3) . (7.5.3) = 1890
 	\label{eq:workgroupeq}
 \end{equation}
 
@@ -113,9 +111,7 @@ Na teoretickej úrovni je častokrát možné dosiahnuť toho istého cieľa na 
 
 \subsection{Program}
 
-\begin{itemize}
-  \item{\bf Program \rm je sekvencia alebo zoznam inštrukcií v nejakom programovacom jazyku, ktoré môže počítač interpretovať alebo vykonať.}
-\end{itemize}
+\bf Program \rm je sekvencia alebo zoznam inštrukcií v nejakom programovacom jazyku, ktoré môže počítač interpretovať alebo vykonať.
 
 Programy na CPU sú definované inštrukciami, ktoré samotné CPU podporuje a ich forma sa naprieč rokmi podstatne nemení. Tieto inštrukcie sú zapísané v takzvanom assembly code, ktorý je určený pre priamu komunikáciu s hardwarom. Rôzne kompilované programovacie jazyky sú kompilované do assembly code, ktorý je následne skompilovaný do strojového kódu spustiteľného na CPU na danom operačnom systéme.
 
@@ -125,9 +121,7 @@ Programy GPU si typicky vopred definujú prostriedky s ktorými chcú na GPU pra
 
 \subsection{API}
 
-\begin{itemize}
-  \item{\bf Application Programming Interface - API \rm je zoznam funkcií alebo procedúr umožňujúcich vytváranie aplikácií, ktoré pristupujú k funkciám alebo dátam operačného systému, aplikácie alebo inej služby.}
-\end{itemize}
+\bf Application Programming Interface - API \rm je zoznam funkcií alebo procedúr umožňujúcich vytváranie aplikácií, ktoré pristupujú k funkciám alebo dátam operačného systému, aplikácie alebo inej služby.
 
 Komunikácia s GPU prebieha prostredníctvom programu spúšťaného na CPU, ktorý volá funkcie popísané API implementovanou ovládačom GPU. Takýchto API existuje v dnešnej dobe viac a každá má svoje vlastné využitie. Medzi najznámejšie a najviac používané patrí
 
