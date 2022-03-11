@@ -33,9 +33,10 @@ GLuint Pass::createShader(GLenum type, std::string shaderSource, std::string id)
 {
     std::stringstream buffer;
     buffer << engineShaderSource;
-    buffer << "#define PASS_" << std::to_string(this->index) << std::endl;
+    buffer << "#define PASS_" << std::to_string(this->index) << (this->isRanOnce ? "_ONCE" : "") << std::endl;
     buffer << "#define PASS_" << std::to_string(this->index) << "_" << id << std::endl;
     buffer << shaderSource;
+
     auto string = buffer.str();
     auto source = string.c_str();
 

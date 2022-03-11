@@ -103,6 +103,9 @@ void Engine::update()
 
     for(auto pass : this->passes)
     {
+        if(pass->isIgnored)
+            continue;
+
         glUseProgram(pass->getProgramId());
 
         for(auto const& [buffer, point] : pass->buffers)
@@ -140,6 +143,9 @@ void Engine::update()
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER , 0);
+
+        if(pass->isRanOnce)
+            pass->isIgnored = true;
     }
     
     glfwPollEvents();
@@ -209,6 +215,11 @@ void Engine::loadShader(std::string filename)
 
         this->print("Compiling pass %zu\n", i);
         auto pass = new Pass(this, i);
+
+        // Check is pass is marked as run only once
+        if(buffer.str().find("#ifdef PASS_" + std::to_string(i)) == buffer.str().find("#ifdef PASS_" + std::to_string(i) + "_ONCE"))
+            pass->isRanOnce = true;
+
         pass->compile(buffer.str());
         this->passes.push_back(pass);
     }

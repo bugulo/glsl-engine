@@ -43,6 +43,12 @@ public:
 
     //! Whether the program contains compute shader
     bool isCompute();
+
+    //! Whether the pass is ignored
+    bool isIgnored = false;
+
+    //! Whether the pass should run only once
+    bool isRanOnce = false;
 private:
     //! Engine instance
     Engine *engine;
