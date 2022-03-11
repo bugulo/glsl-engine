@@ -58,7 +58,7 @@ void Engine::init()
 
     glViewport(0, 0, this->width, this->height);
     
-    // Generate buffers
+    // Generate built-in buffers
 
     glGenBuffers(1, &this->ibo); // Input Buffer Object
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ibo);
@@ -73,29 +73,6 @@ void Engine::init()
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this->dcbo);
     glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 20 * sizeof(unsigned int) * 5, nullptr, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
-
-    /*glCreateVertexArrays(1, &this->vao); // Vertex Array Object
-    //glBindVertexArray(this->vao);
-
-    glGenBuffers(1, &this->vbo); // Vertex Buffer Object
-    glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(unsigned int) * 100, NULL, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, this->vbo);
-
-    glGenBuffers(1, &this->ebo); // Element Buffer Object
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 100, NULL, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, this->ebo);
-
-    glEnableVertexArrayAttrib(this->vao, 0);
-    glVertexArrayVertexBuffer(this->vao, 0, this->vbo, 0, 3 * sizeof(float));
-    glVertexArrayAttribFormat(this->vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
-    glVertexArrayAttribBinding(this->vao, 0, 0);
-    glVertexArrayElementBuffer(this->vao, this->ebo);
-    glBindVertexArray(0);*/
-
-    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
-    //glEnableVertexAttribArray(0);
 }
 
 void Engine::update()
@@ -278,7 +255,11 @@ Buffer* Engine::createBuffer(std::string name, int size)
 
     this->print("- Creating buffer: %s (%db)\n", name.c_str(), size);
 
-    auto buffer = new Buffer(this, name, size);
+    std::cmatch match;
+    if(!std::regex_match(name.c_str(), match, std::regex("^[a-zA-Z0-9]+(?:_(\\d+))?$")))
+        throw std::runtime_error("Failed to generate buffer, Reason: Invalid buffer name");
+
+    auto buffer = new Buffer(this, name, match[1].matched ? stoi(match[1]) : size);
     this->buffers[name] = buffer;
     this->print("- Loaded buffer: %s with ID: %d\n", name.c_str(), buffer->getId());
     return buffer;
