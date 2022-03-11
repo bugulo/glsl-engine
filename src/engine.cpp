@@ -216,9 +216,14 @@ void Engine::loadShader(std::string filename)
         this->print("Compiling pass %zu\n", i);
         auto pass = new Pass(this, i);
 
-        // Check is pass is marked as run only once
-        if(buffer.str().find("#ifdef PASS_" + std::to_string(i)) == buffer.str().find("#ifdef PASS_" + std::to_string(i) + "_ONCE"))
-            pass->isRanOnce = true;
+        // Find all params of the pass
+        std::smatch match;
+        std::string haystack (buffer.str());
+        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(\\s\\S+)?;")))
+        {
+            pass->params[match.str(1)] = match.str(2);
+            haystack = match.suffix();
+        }
 
         pass->compile(buffer.str());
         this->passes.push_back(pass);

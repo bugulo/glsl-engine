@@ -33,7 +33,7 @@ GLuint Pass::createShader(GLenum type, std::string shaderSource, std::string id)
 {
     std::stringstream buffer;
     buffer << engineShaderSource;
-    buffer << "#define PASS_" << std::to_string(this->index) << (this->isRanOnce ? "_ONCE" : "") << std::endl;
+    buffer << "#define PASS_" << std::to_string(this->index) << std::endl;
     buffer << "#define PASS_" << std::to_string(this->index) << "_" << id << std::endl;
     buffer << shaderSource;
 
@@ -63,6 +63,9 @@ void Pass::compile(std::string source)
 {
     if(this->program != 0)
         throw std::runtime_error("Pass was already compiled");
+
+    if(this->params.contains("ONCE"))
+        this->isRanOnce = true;
         
     if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_COMPUTE_SHADER") != std::string::npos)
         this->shaders[GL_COMPUTE_SHADER] = this->createShader(GL_COMPUTE_SHADER, source, "COMPUTE_SHADER");

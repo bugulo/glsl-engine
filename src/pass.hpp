@@ -35,6 +35,9 @@ public:
     //! List of program's buffers
     std::vector<std::tuple<Buffer*, int>> buffers;
 
+    //! List of program's params
+    std::map<std::string, std::string> params;
+
     //! Get OpenGL program ID
     GLuint getProgramId();
 
