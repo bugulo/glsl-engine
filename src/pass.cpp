@@ -26,6 +26,9 @@ Pass::~Pass()
     if(this->framebuffer != 0)
         glDeleteFramebuffers(1, &this->framebuffer);
 
+    if(this->varray != 0)
+        glDeleteVertexArrays(1, &this->varray);
+
     glDeleteProgram(this->program);
 }
 
@@ -161,6 +164,49 @@ void Pass::compile(std::string source)
         this->buffers.push_back(std::make_tuple(engine->createBuffer(buffer, params[1]), params[0]));
     }
 
+    if(!this->isCompute() && this->params.contains("VBO"))
+    {
+        if(!this->engine->buffers.contains(this->params["VBO"]))
+            throw std::runtime_error("Buffer referenced in VAO param does not exist");
+
+        if(this->engine->buffers.contains("EBO") && !this->engine->buffers.contains(this->params["EBO"]))
+            throw std::runtime_error("Buffer referenced in EBO param does not exist");
+
+        glCreateVertexArrays(1, &this->varray);
+
+        GLint inputCount; 
+        glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &inputCount);
+
+        std::vector<std::tuple<GLuint, std::string>> inputs;
+
+        GLsizei totalStride = 0;
+        for(GLint i = 0; i < inputCount; i++)
+        {
+            GLsizei length;
+            GLchar buffer[128] = {};
+
+            GLenum props[1] = {GL_TYPE};
+            GLint params[1] = {0};
+
+            glGetProgramResourceName(program, GL_PROGRAM_INPUT, i, 128, &length, buffer);
+            glGetProgramResourceiv(program, GL_PROGRAM_INPUT, i, 1, props, 1, nullptr, params);
+            GLuint location = glGetProgramResourceIndex(program, GL_PROGRAM_INPUT, buffer);
+            printf("%d %d %d %d %s\n", location, params[0], params[1], GL_FLOAT_VEC3, buffer);
+
+            auto stride = getTypeSize(params[0]);
+            auto format = getTypeFormat(params[0]);
+
+            glEnableVertexArrayAttrib(this->varray, location);
+            glVertexArrayAttribFormat(this->varray, location, std::get<0>(format), std::get<1>(format), GL_FALSE, 0);
+            glVertexArrayAttribBinding(this->varray, location, 0);
+            
+            totalStride += stride;
+        }
+        glVertexArrayVertexBuffer(this->varray, 0, this->engine->buffers[this->params["VBO"]]->getId(), 0, totalStride);
+        if(this->params.contains("EBO"))
+            glVertexArrayElementBuffer(this->varray, this->engine->buffers[this->params["EBO"]]->getId());
+    }
+
     this->program = program;
 }
 
@@ -174,7 +220,28 @@ GLuint Pass::getFramebufferId()
     return this->framebuffer;
 }
 
+GLuint Pass::getVertexArrayId()
+{
+    return this->varray;
+}
+
 bool Pass::isCompute()
 {
     return this->shaders.contains(GL_COMPUTE_SHADER);
+}
+
+GLsizei Pass::getTypeSize(GLenum type)
+{
+    if(type == GL_FLOAT_VEC3)
+        return 3 * sizeof(float);
+    else
+        throw std::runtime_error("Unsupported program input type");
+}
+
+std::tuple<GLint, GLenum> Pass::getTypeFormat(GLenum type)
+{
+    if(type == GL_FLOAT_VEC3)
+        return std::make_tuple(3, GL_FLOAT);
+    else
+        throw std::runtime_error("Unsupported program input type");
 }

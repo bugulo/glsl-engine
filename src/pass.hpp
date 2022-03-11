@@ -32,7 +32,7 @@ public:
     //! List of program's input textures, it's type and location
     std::vector<std::tuple<GLuint, GLenum, GLuint>> inputTextures;
 
-    //! List of program's buffers
+    //! List of program's buffers and it's binding points
     std::vector<std::tuple<Buffer*, int>> buffers;
 
     //! List of program's params
@@ -43,6 +43,9 @@ public:
 
     //! Get OpenGL framebuffer ID
     GLuint getFramebufferId();
+
+    //! Get OpenGL vertex array ID
+    GLuint getVertexArrayId();
 
     //! Whether the program contains compute shader
     bool isCompute();
@@ -76,6 +79,13 @@ private:
 
     //! OpenGL framebuffer ID
     GLuint framebuffer = 0;
+
+    //! OpenGL vertex array ID
+    GLuint varray = 0;
+
+    static GLsizei getTypeSize(GLenum type);
+
+    static std::tuple<GLint, GLenum> getTypeFormat(GLenum type);
 };
 
 #endif

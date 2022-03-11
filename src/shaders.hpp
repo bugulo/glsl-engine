@@ -33,14 +33,6 @@ layout(std140, binding = 2) writeonly buffer DrawCommandBuffer {
     DrawCommand commands[];
 } drawCommandBuffer;
 
-layout(std430, binding = 3) buffer VertexBuffer {
-    float vertices[100];
-} vertexBuffer;
-
-layout(std430, binding = 4) buffer ElementBuffer {
-    uint indices[100];
-} elementBuffer;
-
 void set_drawcommand(uint offset, uint count, uint firstIndex, uint baseVertex, uint baseInstance)
 {
     drawCommandBuffer.commands[offset].count = count;
@@ -48,18 +40,6 @@ void set_drawcommand(uint offset, uint count, uint firstIndex, uint baseVertex, 
     drawCommandBuffer.commands[offset].firstIndex = firstIndex;
     drawCommandBuffer.commands[offset].baseVertex = baseVertex;
     drawCommandBuffer.commands[offset].baseInstance = baseInstance;
-}
-
-void set_vertex(uint offset, vec3 position) {
-    vertexBuffer.vertices[offset * 3]       = position.x;
-    vertexBuffer.vertices[offset * 3 + 1]   = position.y;
-    vertexBuffer.vertices[offset * 3 + 2]   = position.z;
-}
-
-void set_index(uint offset, uvec3 position) {
-    elementBuffer.indices[offset * 3]       = position.x;
-    elementBuffer.indices[offset * 3 + 1]   = position.y;
-    elementBuffer.indices[offset * 3 + 2]   = position.z;
 }
 
 bool key_pressed(uint key) {

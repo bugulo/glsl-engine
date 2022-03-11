@@ -1,5 +1,7 @@
 #include "buffer.hpp"
 
+#include <regex>
+
 #include "engine.hpp"
 
 Buffer::Buffer(Engine *engine, std::string name, int size)

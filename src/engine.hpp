@@ -66,6 +66,12 @@ public:
      * @return Buffer instance
      */
     Buffer* createBuffer(std::string name, int size);
+
+    //! Map of created textures and it's ids
+    std::map<std::string, GLuint> textures;
+
+    //! Map of created buffers and it's ids
+    std::map<std::string, Buffer*> buffers;
 private:
     //! Window width
     int width;
@@ -102,12 +108,6 @@ private:
 
     //! Element Buffer Object
     GLuint ebo;
-
-    //! Map of created textures and it's ids
-    std::map<std::string, GLuint> textures;
-
-    //! Map of created buffers and it's ids
-    std::map<std::string, Buffer*> buffers;
 };
 
 #endif

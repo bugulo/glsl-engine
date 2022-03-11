@@ -74,8 +74,8 @@ void Engine::init()
     glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 20 * sizeof(unsigned int) * 5, nullptr, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
 
-    glGenVertexArrays(1, &this->vao); // Vertex Array Object
-    glBindVertexArray(this->vao);
+    /*glCreateVertexArrays(1, &this->vao); // Vertex Array Object
+    //glBindVertexArray(this->vao);
 
     glGenBuffers(1, &this->vbo); // Vertex Buffer Object
     glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
@@ -87,8 +87,15 @@ void Engine::init()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 100, NULL, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, this->ebo);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(0);
+    glEnableVertexArrayAttrib(this->vao, 0);
+    glVertexArrayVertexBuffer(this->vao, 0, this->vbo, 0, 3 * sizeof(float));
+    glVertexArrayAttribFormat(this->vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
+    glVertexArrayAttribBinding(this->vao, 0, 0);
+    glVertexArrayElementBuffer(this->vao, this->ebo);
+    glBindVertexArray(0);*/
+
+    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+    //glEnableVertexAttribArray(0);
 }
 
 void Engine::update()
@@ -138,11 +145,13 @@ void Engine::update()
         }
         else
         {
-            glBindVertexArray(this->vao);
+            if(pass->getVertexArrayId() != 0)
+                glBindVertexArray(pass->getVertexArrayId());
             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, 0);
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER , 0);
+        glBindVertexArray(0);
 
         if(pass->isRanOnce)
             pass->isIgnored = true;
@@ -219,7 +228,7 @@ void Engine::loadShader(std::string filename)
         // Find all params of the pass
         std::smatch match;
         std::string haystack (buffer.str());
-        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(\\s\\S+)?;")))
+        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(?:\\s(\\S+))?;")))
         {
             pass->params[match.str(1)] = match.str(2);
             haystack = match.suffix();
@@ -267,7 +276,7 @@ Buffer* Engine::createBuffer(std::string name, int size)
         return this->buffers[name];
     }
 
-    this->print("- Creating buffer: %s\n", name.c_str());
+    this->print("- Creating buffer: %s (%db)\n", name.c_str(), size);
 
     auto buffer = new Buffer(this, name, size);
     this->buffers[name] = buffer;
