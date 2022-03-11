@@ -7,7 +7,7 @@ Buffer::Buffer(Engine *engine, std::string name, int size)
     this->engine = engine;
 
     glCreateBuffers(1, &this->id);
-    glNamedBufferData(this->id, sizeof(unsigned int), NULL, GL_DYNAMIC_DRAW);
+    glNamedBufferData(this->id, size, NULL, GL_DYNAMIC_DRAW);
 }
 
 Buffer::~Buffer()
