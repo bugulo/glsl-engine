@@ -1,5 +1,5 @@
-#ifndef PROGRAM_H
-#define PROGRAM_H
+#ifndef PASS_H
+#define PASS_H
 
 #include <map>
 #include <tuple>
