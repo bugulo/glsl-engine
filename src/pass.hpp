@@ -65,6 +65,18 @@ private:
     //! Map of compiled shaders by it's type
     std::map<GLenum, GLuint> shaders;
 
+    //! Parse program inputs and generate vertex array
+    void parseProgramInputs();
+
+    //! Parse program outputs and generate framebuffer
+    void parseProgramOutputs();
+
+    //! Parse program uniforms and generate textures
+    void parseProgramUniforms();
+    
+    //! Parse program buffers and generate buffer objects
+    void parseProgramBuffers();
+
     /*!
      * @brief Create and compile shader of the pass
      * @param type Shader type
@@ -82,10 +94,6 @@ private:
 
     //! OpenGL vertex array ID
     GLuint varray = 0;
-
-    static GLsizei getTypeSize(GLenum type);
-
-    static std::tuple<GLint, GLenum> getTypeFormat(GLenum type);
 };
 
 #endif

@@ -127,7 +127,7 @@ void Engine::update()
             glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, 0);
         }
 
-        glBindFramebuffer(GL_FRAMEBUFFER , 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glBindVertexArray(0);
 
         if(pass->isRanOnce)
@@ -152,12 +152,9 @@ void Engine::destroy()
     for(auto const& [name, id] : this->textures)
         glDeleteTextures(1, &id);
 
-    glDeleteVertexArrays(1, &this->vao);
     glDeleteBuffers(1, &this->ibo);
     glDeleteBuffers(1, &this->wgbo);
     glDeleteBuffers(1, &this->dcbo);
-    glDeleteBuffers(1, &this->vbo);
-    glDeleteBuffers(1, &this->ebo);
     
     glfwDestroyWindow(this->context);
     glfwTerminate();
@@ -227,11 +224,11 @@ GLuint Engine::createTexture(std::string name)
         return this->textures[name];
     }
 
-    this->print("- Creating texture: %s\n", name.c_str());
-
     std::cmatch match;
     if(!std::regex_match(name.c_str(), match, std::regex("^\\S+_(\\d+)x(\\d+)$")))
         throw std::runtime_error("Failed to generate texture, Reason: Invalid texture name");
+    
+    this->print("- Creating texture: %s\n", name.c_str());
 
     GLuint texture;
     glCreateTextures(GL_TEXTURE_2D, 1, &texture);
@@ -253,13 +250,16 @@ Buffer* Engine::createBuffer(std::string name, int size)
         return this->buffers[name];
     }
 
-    this->print("- Creating buffer: %s (%db)\n", name.c_str(), size);
-
     std::cmatch match;
     if(!std::regex_match(name.c_str(), match, std::regex("^[a-zA-Z0-9]+(?:_(\\d+))?$")))
         throw std::runtime_error("Failed to generate buffer, Reason: Invalid buffer name");
 
-    auto buffer = new Buffer(this, name, match[1].matched ? stoi(match[1]) : size);
+    // If there is size specified in the buffer name, use that one instead of GLSL information
+    size = match[1].matched ? stoi(match[1]) : size;
+
+    this->print("- Creating buffer: %s (%db)\n", name.c_str(), size);
+
+    auto buffer = new Buffer(this, name, size);
     this->buffers[name] = buffer;
     this->print("- Loaded buffer: %s with ID: %d\n", name.c_str(), buffer->getId());
     return buffer;

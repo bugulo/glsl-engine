@@ -11,6 +11,7 @@
 #include "engine.hpp"
 #include "shaders.hpp"
 #include "buffer.hpp"
+#include "utils.hpp"
 
 Pass::Pass(Engine *engine, int index)
 {
@@ -49,9 +50,9 @@ GLuint Pass::createShader(GLenum type, std::string shaderSource, std::string id)
     glShaderSource(shader, 1, &source, NULL);
     glCompileShader(shader);
 
+    // Check if shader was compiled successfully
     GLint compileStatus;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-
     if(compileStatus == GL_FALSE)
     {
         char error[512];
@@ -70,6 +71,7 @@ void Pass::compile(std::string source)
     if(this->params.contains("ONCE"))
         this->isRanOnce = true;
         
+    // Compile shaders that are part of the pass
     if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_COMPUTE_SHADER") != std::string::npos)
         this->shaders[GL_COMPUTE_SHADER] = this->createShader(GL_COMPUTE_SHADER, source, "COMPUTE_SHADER");
 
@@ -79,11 +81,14 @@ void Pass::compile(std::string source)
     if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_FRAGMENT_SHADER") != std::string::npos)
         this->shaders[GL_FRAGMENT_SHADER] = this->createShader(GL_FRAGMENT_SHADER, source, "FRAGMENT_SHADER");
 
+    // TODO: geometry and tesselation shader
+
     auto program = glCreateProgram();
     for(const auto &x : this->shaders)
         glAttachShader(program, x.second);
     glLinkProgram(program);
     
+    // Check if program was linked successfully
     GLint linkStatus;
     glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
     if(linkStatus == GL_FALSE)
@@ -93,16 +98,113 @@ void Pass::compile(std::string source)
         throw std::runtime_error("Failed to link program, Reason: " + std::string(buffer));
     }
 
+    // Check if program was validated successfully
     GLint validateStatus;
     glValidateProgram(program);
     glGetProgramiv(program, GL_VALIDATE_STATUS, &validateStatus);
     if(validateStatus == GL_FALSE)
-    {
         throw std::runtime_error("Failed to validate program");
+
+    // Parse programs for additional information
+    this->parseProgramUniforms();
+    this->parseProgramOutputs();
+    this->parseProgramBuffers();
+    this->parseProgramInputs();
+
+    this->program = program;
+}
+
+void Pass::parseProgramInputs()
+{
+    // Parse program inputs only if we work with vertex data
+    if(this->isCompute())
+        return;
+
+    // User needs to specify vertex buffer so we can generate vertex array
+    if(!this->params.contains("VBO"))
+        throw std::runtime_error("VBO param is missing in PASS_" + std::to_string(this->index));
+
+    if(!this->engine->buffers.contains(this->params["VBO"]))
+        throw std::runtime_error("Buffer referenced in VAO param does not exist");
+
+    glCreateVertexArrays(1, &this->varray);
+
+    GLint inputCount; 
+    glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &inputCount);
+
+    GLsizei currentStride = 0;
+    for(GLint i = 0; i < inputCount; i++)
+    {
+        GLsizei length;
+        GLchar buffer[128] = {}; // TODO: we should fetch max length from gpu
+
+        GLenum props[1] = {GL_TYPE};
+        GLint params[1] = {0};
+
+        glGetProgramResourceName(program, GL_PROGRAM_INPUT, i, 128, &length, buffer);
+        glGetProgramResourceiv(program, GL_PROGRAM_INPUT, i, 1, props, 1, nullptr, params);
+
+        auto location = glGetProgramResourceIndex(program, GL_PROGRAM_INPUT, buffer);
+        auto stride = Utils::getTypeSize(params[0]);
+        auto format = Utils::getTypeFormat(params[0]);
+
+        glEnableVertexArrayAttrib(this->varray, location);
+        glVertexArrayAttribFormat(this->varray, location, std::get<0>(format), std::get<1>(format), GL_FALSE, currentStride);
+        glVertexArrayAttribBinding(this->varray, location, 0);
+        
+        currentStride += stride;
     }
 
+    glVertexArrayVertexBuffer(this->varray, 0, this->engine->buffers[this->params["VBO"]]->getId(), 0, currentStride);
+
+    // If element buffer was specified, bind it to vertex array
+    if(this->params.contains("EBO"))
+    {
+        if(!this->engine->buffers.contains(this->params["EBO"]))
+            throw std::runtime_error("Buffer referenced in EBO param does not exist");
+
+        glVertexArrayElementBuffer(this->varray, this->engine->buffers[this->params["EBO"]]->getId());
+    }
+}
+
+void Pass::parseProgramOutputs()
+{
+    GLint outputCount; 
+    glGetProgramInterfaceiv(program, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES, &outputCount);
+
+    std::vector<std::tuple<GLuint, std::string>> outputs;
+    for(GLint i = 0; i < outputCount; i++)
+    {
+        GLsizei length;
+        GLchar buffer[128] = {}; // TODO: we should fetch max length from gpu
+
+        glGetProgramResourceName(program, GL_PROGRAM_OUTPUT, i, 128, &length, buffer);
+        auto location = glGetProgramResourceIndex(program, GL_PROGRAM_OUTPUT, buffer);
+        outputs.push_back(std::make_tuple(location, std::string(buffer)));
+    }
+
+    // If there are no outputs, there is no reason to generate framebuffer
+    if(outputs.size() == 0)
+        return;
+
+    // Don't generate new framebuffer when rendering to default one
+    if(std::get<1>(outputs[0]) == "defaultOutput")
+        return;
+
+    glCreateFramebuffers(1, &this->framebuffer);
+
+    for(auto const& [location, name] : outputs)
+    {
+        auto texture = this->engine->createTexture(name);
+        glNamedFramebufferTexture(this->framebuffer, GL_COLOR_ATTACHMENT0 + location, texture, 0);
+    }
+}
+
+void Pass::parseProgramUniforms()
+{
     GLint uniformCount;
     glGetProgramInterfaceiv(program, GL_UNIFORM, GL_ACTIVE_RESOURCES, &uniformCount);
+
     for(GLint i = 0; i < uniformCount; ++i) 
     {
         GLsizei length;
@@ -112,40 +214,20 @@ void Pass::compile(std::string source)
 
         glGetActiveUniform(program, i, 200, &length, &size, &type, buffer);
         auto location = glGetUniformLocation(program, buffer);
-        
-        auto name = std::string(buffer);
 
-        auto texture = this->engine->createTexture(name);
+        if(type != GL_SAMPLER_2D || type != GL_IMAGE_2D)
+            throw std::runtime_error("Unsupported uniform type");
+
+        auto texture = this->engine->createTexture(std::string(buffer));
         this->inputTextures.push_back(std::make_tuple(texture, type, location));
     }
+}
 
-    GLint outputCount; 
-    glGetProgramInterfaceiv(program, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES, &outputCount);
-
-    std::vector<std::tuple<GLuint, std::string>> outputs;
-    for(GLint i = 0; i < outputCount; i++)
-    {
-        GLsizei length;
-        GLchar buffer[128] = {};
-
-        glGetProgramResourceName(program, GL_PROGRAM_OUTPUT, i, 128, &length, buffer);
-        GLuint location = glGetProgramResourceIndex(program, GL_PROGRAM_OUTPUT, buffer);
-        outputs.push_back(std::make_tuple(location, std::string(buffer)));
-    }
-
-    if(outputs.size() != 0 && std::get<1>(outputs[0]) != "defaultOutput")
-    {
-        glCreateFramebuffers(1, &this->framebuffer);
-
-        for(auto const& [location, name] : outputs)
-        {
-            auto texture = this->engine->createTexture(name);
-            glNamedFramebufferTexture(this->framebuffer, GL_COLOR_ATTACHMENT0 + location, texture, 0);
-        }
-    }
-
+void Pass::parseProgramBuffers()
+{
     GLint bufferCount;
     glGetProgramInterfaceiv(program, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &bufferCount);
+
     for(GLint i = 0; i < bufferCount; ++i) 
     {
         GLenum props[3] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
@@ -163,51 +245,6 @@ void Pass::compile(std::string source)
 
         this->buffers.push_back(std::make_tuple(engine->createBuffer(buffer, params[1]), params[0]));
     }
-
-    if(!this->isCompute() && this->params.contains("VBO"))
-    {
-        if(!this->engine->buffers.contains(this->params["VBO"]))
-            throw std::runtime_error("Buffer referenced in VAO param does not exist");
-
-        if(this->engine->buffers.contains("EBO") && !this->engine->buffers.contains(this->params["EBO"]))
-            throw std::runtime_error("Buffer referenced in EBO param does not exist");
-
-        glCreateVertexArrays(1, &this->varray);
-
-        GLint inputCount; 
-        glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &inputCount);
-
-        std::vector<std::tuple<GLuint, std::string>> inputs;
-
-        GLsizei totalStride = 0;
-        for(GLint i = 0; i < inputCount; i++)
-        {
-            GLsizei length;
-            GLchar buffer[128] = {};
-
-            GLenum props[1] = {GL_TYPE};
-            GLint params[1] = {0};
-
-            glGetProgramResourceName(program, GL_PROGRAM_INPUT, i, 128, &length, buffer);
-            glGetProgramResourceiv(program, GL_PROGRAM_INPUT, i, 1, props, 1, nullptr, params);
-            GLuint location = glGetProgramResourceIndex(program, GL_PROGRAM_INPUT, buffer);
-            printf("%d %d %d %d %s\n", location, params[0], params[1], GL_FLOAT_VEC3, buffer);
-
-            auto stride = getTypeSize(params[0]);
-            auto format = getTypeFormat(params[0]);
-
-            glEnableVertexArrayAttrib(this->varray, location);
-            glVertexArrayAttribFormat(this->varray, location, std::get<0>(format), std::get<1>(format), GL_FALSE, 0);
-            glVertexArrayAttribBinding(this->varray, location, 0);
-            
-            totalStride += stride;
-        }
-        glVertexArrayVertexBuffer(this->varray, 0, this->engine->buffers[this->params["VBO"]]->getId(), 0, totalStride);
-        if(this->params.contains("EBO"))
-            glVertexArrayElementBuffer(this->varray, this->engine->buffers[this->params["EBO"]]->getId());
-    }
-
-    this->program = program;
 }
 
 GLuint Pass::getProgramId()
@@ -228,20 +265,4 @@ GLuint Pass::getVertexArrayId()
 bool Pass::isCompute()
 {
     return this->shaders.contains(GL_COMPUTE_SHADER);
-}
-
-GLsizei Pass::getTypeSize(GLenum type)
-{
-    if(type == GL_FLOAT_VEC3)
-        return 3 * sizeof(float);
-    else
-        throw std::runtime_error("Unsupported program input type");
-}
-
-std::tuple<GLint, GLenum> Pass::getTypeFormat(GLenum type)
-{
-    if(type == GL_FLOAT_VEC3)
-        return std::make_tuple(3, GL_FLOAT);
-    else
-        throw std::runtime_error("Unsupported program input type");
 }

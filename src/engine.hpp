@@ -99,15 +99,6 @@ private:
 
     //! Draw Command Buffer Object
     GLuint dcbo;
-
-    //! Vertex Array Object
-    GLuint vao;
-
-    //! Vertex Buffer Object
-    GLuint vbo;
-
-    //! Element Buffer Object
-    GLuint ebo;
 };
 
 #endif
