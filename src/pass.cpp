@@ -105,13 +105,13 @@ void Pass::compile(std::string source)
     if(validateStatus == GL_FALSE)
         throw std::runtime_error("Failed to validate program");
 
+    this->program = program;
+
     // Parse programs for additional information
     this->parseProgramUniforms();
     this->parseProgramOutputs();
     this->parseProgramBuffers();
     this->parseProgramInputs();
-
-    this->program = program;
 }
 
 void Pass::parseProgramInputs()
@@ -215,7 +215,7 @@ void Pass::parseProgramUniforms()
         glGetActiveUniform(program, i, 200, &length, &size, &type, buffer);
         auto location = glGetUniformLocation(program, buffer);
 
-        if(type != GL_SAMPLER_2D || type != GL_IMAGE_2D)
+        if(type != GL_SAMPLER_2D && type != GL_IMAGE_2D)
             throw std::runtime_error("Unsupported uniform type");
 
         auto texture = this->engine->createTexture(std::string(buffer));
