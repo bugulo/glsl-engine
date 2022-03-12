@@ -2,12 +2,34 @@ layout(std430, binding = 5) volatile buffer MyBuffer {
     uint counter;
 } myBuffer;
 
+layout(std430, binding = 6) buffer Myvbo {
+    float vertices[100];
+} myvbo;
+
+layout(std430, binding = 7) buffer Myebo {
+    uint indices[100];
+} myebo;
+
+void set_vertex(uint offset, vec3 position) {
+    myvbo.vertices[offset * 3]       = position.x;
+    myvbo.vertices[offset * 3 + 1]   = position.y;
+    myvbo.vertices[offset * 3 + 2]   = position.z;
+}
+
+void set_index(uint offset, uvec3 position) {
+    myebo.indices[offset * 3]       = position.x;
+    myebo.indices[offset * 3 + 1]   = position.y;
+    myebo.indices[offset * 3 + 2]   = position.z;
+}
+
 #ifdef PASS_0
+    #pragma PASS_0_PARAM ONCE;
+
     #ifdef PASS_0_COMPUTE_SHADER
         layout(local_size_x = 1) in;
 
         void main() {
-            if(gl_NumWorkGroups.x == 1 && gl_LocalInvocationIndex == 0) {
+            //if(gl_NumWorkGroups.x == 1 && gl_LocalInvocationIndex == 0) {
                 workGroupBuffer.x = 4;
                 workGroupBuffer.y = 1;
                 workGroupBuffer.z = 1;
@@ -21,7 +43,7 @@ layout(std430, binding = 5) volatile buffer MyBuffer {
                 set_index(1, uvec3(1, 2, 3));
 
                 set_drawcommand(0, 6, 0, 0, 0);
-            }
+            //}
         }
     #endif
 #endif
@@ -55,10 +77,10 @@ layout(std430, binding = 5) volatile buffer MyBuffer {
                 const uint y = previous / 512;
                 const ivec3 position = ivec3(gl_LocalInvocationID) + ivec3(x, y, 0);
 
-                if(key_pressed(KEY_B)) {
+                if(mouse_pressed(MOUSE_BUTTON_LEFT)) {
                     imageStore(testTexture1_500x500, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
                     imageStore(testTexture2_500x500, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
-                } else if(key_pressed(KEY_A)) {
+                } else if(mouse_pressed(MOUSE_BUTTON_RIGHT)) {
                     imageStore(testTexture1_500x500, position.xy, vec4(0.7f, 0.7f, 0.7f, 1.0f));
                     imageStore(testTexture2_500x500, position.xy, vec4(0.3f, 0.3f, 0.3f, 1.0f));
                 } else {
@@ -71,6 +93,9 @@ layout(std430, binding = 5) volatile buffer MyBuffer {
 #endif
 
 #ifdef PASS_2
+    #pragma PASS_2_PARAM VBO Myvbo;
+    #pragma PASS_2_PARAM EBO Myebo;
+
     #ifdef PASS_2_VERTEX_SHADER
         layout (location = 0) in vec3 aPos;
 
@@ -97,6 +122,9 @@ layout(std430, binding = 5) volatile buffer MyBuffer {
 #endif
 
 #ifdef PASS_3
+    #pragma PASS_3_PARAM VBO Myvbo;
+    #pragma PASS_3_PARAM EBO Myebo;
+
     #ifdef PASS_3_VERTEX_SHADER
         layout (location = 0) in vec3 aPos;
 
@@ -112,7 +140,7 @@ layout(std430, binding = 5) volatile buffer MyBuffer {
         out vec4 defaultOutput;
 
         void main() {
-            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y) / 512;
+            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y) / inputBuffer.mouseX;
             defaultOutput = texture(testTexture3_500x500, position);
         }
     #endif
