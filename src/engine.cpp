@@ -44,8 +44,12 @@ void Engine::init()
 
     glfwSetWindowUserPointer(this->context, this);
 
-    //glfwSetFramebufferSizeCallback(context, framebuffer_size_callback);
-    glfwSetKeyCallback(context, []( GLFWwindow* context, int key, int scancode, int action, int mods ) {
+    glfwSetFramebufferSizeCallback(context, [](GLFWwindow* context, int width, int height) {
+        auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
+        engine->size_callback(context, width, height);
+    });
+
+    glfwSetKeyCallback(context, [](GLFWwindow* context, int key, int scancode, int action, int mods) {
         auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
         engine->key_callback(context, key, scancode, action, mods);
     });
@@ -176,6 +180,13 @@ void Engine::key_callback(GLFWwindow *context, int key, int scancode, int action
         this->keyState[key] = 1;
     else if(action == 0)
         this->keyState[key] = 0;
+}
+
+void Engine::size_callback(GLFWwindow *context, int width, int height)
+{
+    this->width = width;
+    this->height = height;
+    glViewport(0, 0, width, height);
 }
 
 void Engine::loadShader(std::string filename)

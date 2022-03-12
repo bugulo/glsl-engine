@@ -88,6 +88,9 @@ private:
     //! Key state change callback
     void key_callback(GLFWwindow *context, int key, int scancode, int action, int mods);
 
+    //! Window size change callback
+    void size_callback(GLFWwindow *context, int width, int height);
+
     //! List of compiled pass instances
     std::vector<Pass*> passes;
 
