@@ -44,14 +44,24 @@ void Engine::init()
 
     glfwSetWindowUserPointer(this->context, this);
 
-    glfwSetFramebufferSizeCallback(context, [](GLFWwindow* context, int width, int height) {
+    glfwSetFramebufferSizeCallback(context, [](GLFWwindow *context, int width, int height) {
         auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
         engine->size_callback(context, width, height);
     });
 
-    glfwSetKeyCallback(context, [](GLFWwindow* context, int key, int scancode, int action, int mods) {
+    glfwSetKeyCallback(context, [](GLFWwindow *context, int key, int scancode, int action, int mods) {
         auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
         engine->key_callback(context, key, scancode, action, mods);
+    });
+
+    glfwSetCursorPosCallback(context, [](GLFWwindow *context, double xpos, double ypos) {
+        auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
+        engine->mouse_pos_callback(context, xpos, ypos);
+    });
+
+    glfwSetMouseButtonCallback(context, [](GLFWwindow *context, int button, int action, int mods) {
+        auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
+        engine->mouse_btn_callback(context, button, action, mods);
     });
 
     glfwMakeContextCurrent(context);
@@ -87,7 +97,7 @@ void Engine::update()
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->ibo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(this->keyState), &this->keyState, GL_STATIC_READ);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(this->inputBuffer), &this->inputBuffer, GL_STATIC_READ);
 
     for(auto pass : this->passes)
     {
@@ -177,9 +187,9 @@ bool Engine::shouldClose()
 void Engine::key_callback(GLFWwindow *context, int key, int scancode, int action, int mods)
 {
     if(action == 1 || action == 2)
-        this->keyState[key] = 1;
+        this->inputBuffer.keyState[key] = 1;
     else if(action == 0)
-        this->keyState[key] = 0;
+        this->inputBuffer.keyState[key] = 0;
 }
 
 void Engine::size_callback(GLFWwindow *context, int width, int height)
@@ -187,6 +197,17 @@ void Engine::size_callback(GLFWwindow *context, int width, int height)
     this->width = width;
     this->height = height;
     glViewport(0, 0, width, height);
+}
+
+void Engine::mouse_pos_callback(GLFWwindow *context, double xpos, double ypos)
+{
+    this->inputBuffer.mouseX = xpos;
+    this->inputBuffer.mouseY = ypos;
+}
+
+void Engine::mouse_btn_callback(GLFWwindow *context, int button, int action, int mods)
+{
+    this->inputBuffer.btnState[button] = action;
 }
 
 void Engine::loadShader(std::string filename)

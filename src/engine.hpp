@@ -15,6 +15,21 @@
 class Pass;
 class Buffer;
 
+struct InputBuffer
+{
+    //! Mouse X position
+    int mouseX = 0;
+
+    //! Mouse Y position
+    int mouseY = 0;
+
+    //! State of mouse buttons
+    int btnState[GLFW_MOUSE_BUTTON_LAST] = {0};
+
+    //! State of keyboard button
+    int keyState[GLFW_KEY_LAST] = {0};
+};
+
 class Engine
 {
 public:
@@ -82,14 +97,20 @@ private:
     //! OpenGL context
     GLFWwindow *context = nullptr;
 
-    //! State of keys and buttons
-    int keyState[GLFW_KEY_MENU] = {0};
+    //! Input buffer instance
+    InputBuffer inputBuffer;
 
     //! Key state change callback
     void key_callback(GLFWwindow *context, int key, int scancode, int action, int mods);
 
     //! Window size change callback
     void size_callback(GLFWwindow *context, int width, int height);
+
+    //! Mouse position change callback
+    void mouse_pos_callback(GLFWwindow *context, double xpos, double ypos);
+
+    //! Mouse button state change callback
+    void mouse_btn_callback(GLFWwindow *context, int button, int action, int mods);
 
     //! List of compiled pass instances
     std::vector<Pass*> passes;
