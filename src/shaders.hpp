@@ -144,19 +144,21 @@ const char *engineShaderSource = R"(
 #define STATE_RELEASED 0
 #define STATE_PRESSED 1
 
-layout(std430, binding = 0) volatile buffer InputBuffer {
+layout(std430, binding = 0) buffer EngineBuffer {
+    double currentTime;
+    double deltaTime;
     int mouseX;
     int mouseY;
     int mouse[MOUSE_BUTTON_LAST];
     int keys[KEY_LAST];
-} inputBuffer;
+} engineBuffer;
 
 bool key_pressed(uint key) {
-    return inputBuffer.keys[key] == STATE_PRESSED;
+    return engineBuffer.keys[key] == STATE_PRESSED;
 }
 
 bool mouse_pressed(uint key) {
-    return inputBuffer.mouse[key] == STATE_PRESSED;
+    return engineBuffer.mouse[key] == STATE_PRESSED;
 }
 
 layout(std430, binding = 1) buffer WorkGroupBuffer {

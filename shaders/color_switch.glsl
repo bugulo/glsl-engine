@@ -140,7 +140,7 @@ void set_index(uint offset, uvec3 position) {
         out vec4 defaultOutput;
 
         void main() {
-            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y) / inputBuffer.mouseX;
+            vec2 position = vec2(gl_FragCoord.x, gl_FragCoord.y) / engineBuffer.mouseX;
             defaultOutput = texture(testTexture3_500x500, position);
         }
     #endif

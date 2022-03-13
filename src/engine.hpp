@@ -15,8 +15,14 @@
 class Pass;
 class Buffer;
 
-struct InputBuffer
+struct EngineBuffer
 {
+    //! Current engine time
+    double currentTime = 0;
+
+    //! Last frame delta time
+    double deltaTime = 0;
+
     //! Mouse X position
     int mouseX = 0;
 
@@ -97,8 +103,11 @@ private:
     //! OpenGL context
     GLFWwindow *context = nullptr;
 
-    //! Input buffer instance
-    InputBuffer inputBuffer;
+    //! Engine buffer instance
+    EngineBuffer engineBuffer;
+
+    //! Time of the last frame
+    double lastFrameTime = 0;
 
     //! Key state change callback
     void key_callback(GLFWwindow *context, int key, int scancode, int action, int mods);

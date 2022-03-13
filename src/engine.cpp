@@ -96,8 +96,13 @@ void Engine::update()
 
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // Update time information
+    engineBuffer.currentTime = glfwGetTime();
+    engineBuffer.deltaTime = engineBuffer.currentTime - lastFrameTime;
+    lastFrameTime = engineBuffer.currentTime;
+
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->ibo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(this->inputBuffer), &this->inputBuffer, GL_STATIC_READ);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(this->engineBuffer), &this->engineBuffer, GL_STATIC_READ);
 
     for(auto pass : this->passes)
     {
@@ -187,9 +192,9 @@ bool Engine::shouldClose()
 void Engine::key_callback(GLFWwindow *context, int key, int scancode, int action, int mods)
 {
     if(action == 1 || action == 2)
-        this->inputBuffer.keyState[key] = 1;
+        this->engineBuffer.keyState[key] = 1;
     else if(action == 0)
-        this->inputBuffer.keyState[key] = 0;
+        this->engineBuffer.keyState[key] = 0;
 }
 
 void Engine::size_callback(GLFWwindow *context, int width, int height)
@@ -201,13 +206,13 @@ void Engine::size_callback(GLFWwindow *context, int width, int height)
 
 void Engine::mouse_pos_callback(GLFWwindow *context, double xpos, double ypos)
 {
-    this->inputBuffer.mouseX = xpos;
-    this->inputBuffer.mouseY = ypos;
+    this->engineBuffer.mouseX = xpos;
+    this->engineBuffer.mouseY = ypos;
 }
 
 void Engine::mouse_btn_callback(GLFWwindow *context, int button, int action, int mods)
 {
-    this->inputBuffer.btnState[button] = action;
+    this->engineBuffer.btnState[button] = action;
 }
 
 void Engine::loadShader(std::string filename)

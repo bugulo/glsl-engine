@@ -238,9 +238,8 @@ void Pass::parseProgramBuffers()
         glGetProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, i, 3, props, 3, nullptr, params);
 
         // Skip builtin buffers
-        if(strcmp(buffer, "InputBuffer") == 0 || strcmp(buffer, "DrawCommandBuffer") == 0 ||
-           strcmp(buffer, "WorkGroupBuffer") == 0 || strcmp(buffer, "VertexBuffer") == 0 || 
-           strcmp(buffer, "ElementBuffer") == 0)
+        if(strcmp(buffer, "EngineBuffer") == 0 || strcmp(buffer, "DrawCommandBuffer") == 0 ||
+           strcmp(buffer, "WorkGroupBuffer") == 0)
             continue;
 
         this->buffers.push_back(std::make_tuple(engine->createBuffer(buffer, params[1]), params[0]));
