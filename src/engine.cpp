@@ -85,7 +85,7 @@ void Engine::init()
 
     glGenBuffers(1, &this->dcbo); // Draw Command Buffer Object
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this->dcbo);
-    glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 20 * sizeof(unsigned int) * 5, nullptr, GL_MAP_WRITE_BIT);
+    glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 100 * sizeof(unsigned int) * 5, nullptr, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
 }
 
@@ -143,7 +143,7 @@ void Engine::update()
         {
             if(pass->getVertexArrayId() != 0)
                 glBindVertexArray(pass->getVertexArrayId());
-            glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 1, 0);
+            glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 100, 0);
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

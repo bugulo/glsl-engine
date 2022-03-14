@@ -2,7 +2,7 @@
 #define SHADER_H
 
 const char *engineShaderSource = R"(
-#version 440 core
+#version 460 core
 
 #extension GL_ARB_shader_ballot : enable
 
@@ -177,8 +177,8 @@ struct DrawCommand {
     uint baseInstance;
 };
 
-layout(std140, binding = 2) writeonly buffer DrawCommandBuffer {
-    DrawCommand commands[];
+layout(std430, binding = 2) writeonly buffer DrawCommandBuffer {
+    DrawCommand commands[100];
 } drawCommandBuffer;
 
 void set_drawcommand(uint offset, uint count, uint firstIndex, uint baseVertex, uint baseInstance)
