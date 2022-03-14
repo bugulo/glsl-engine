@@ -37,14 +37,17 @@ void Engine::init(std::string filename)
     // Find all global params
     std::smatch match;
     std::string haystack (buffer.str());
-    while(std::regex_search(haystack, match, std::regex("#pragma PARAM (\\S+)(?:\\s(\\S+))?;")))
+    while(std::regex_search(haystack, match, std::regex("#pragma PARAM (\\S+)(?:\\s(?:(\\w+)|\\\"([^\"]*)\\\"))?;")))
     {
-        params[match.str(1)] = match.str(2);
+        params[match.str(1)] = match[3].matched ? match.str(3) : match.str(2);
         haystack = match.suffix();
     }
 
-    this->engineBuffer.width = this->params.contains("WIDTH") ? stoi(this->params["WIDTH"]) : 512;
-    this->engineBuffer.height = this->params.contains("HEIGHT") ? stoi(this->params["HEIGHT"]) : 512;
+    if(this->params.contains("WIDTH"))
+        this->engineBuffer.width = stoi(this->params["WIDTH"]);
+
+    if(this->params.contains("HEIGHT"))
+        this->engineBuffer.height = stoi(this->params["HEIGHT"]);
 
     // Initialize GLFW
     if(glfwInit() == GLFW_FALSE)
@@ -54,7 +57,7 @@ void Engine::init(std::string filename)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    this->context = glfwCreateWindow(this->engineBuffer.width, this->engineBuffer.height, "GPU Engine", NULL, NULL);
+    this->context = glfwCreateWindow(this->engineBuffer.width, this->engineBuffer.height, this->params.contains("TITLE") ? this->params["TITLE"].c_str() : "", NULL, NULL);
 
     if(this->context == NULL)
         throw std::runtime_error("Failed to initialize window");
@@ -118,9 +121,9 @@ void Engine::init(std::string filename)
         // Find all params of the pass
         std::smatch match;
         std::string haystack (buffer.str());
-        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(?:\\s(\\S+))?;")))
+        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(?:\\s(?:(\\w+)|\\\"([^\"]*)\\\"))?;")))
         {
-            pass->params[match.str(1)] = match.str(2);
+            pass->params[match.str(1)] = match[3].matched ? match.str(3) : match.str(2);
             haystack = match.suffix();
         }
 
@@ -219,6 +222,7 @@ void Engine::destroy()
     glfwTerminate();
 
     this->context = nullptr;
+    this->engineBuffer = {};
 }
 
 bool Engine::shouldClose()
