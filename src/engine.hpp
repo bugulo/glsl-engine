@@ -17,6 +17,12 @@ class Buffer;
 
 struct EngineBuffer
 {
+    //! Window height
+    int height = 0;
+
+    //! Window width
+    int width = 0;
+    
     //! Current engine time
     double currentTime = 0;
 

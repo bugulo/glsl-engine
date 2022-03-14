@@ -201,6 +201,8 @@ void Engine::size_callback(GLFWwindow *context, int width, int height)
 {
     this->width = width;
     this->height = height;
+    this->engineBuffer.width = width;
+    this->engineBuffer.height = height;
     glViewport(0, 0, width, height);
 }
 
