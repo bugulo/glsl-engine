@@ -145,6 +145,12 @@ void Pass::parseProgramInputs()
         glGetProgramResourceName(program, GL_PROGRAM_INPUT, i, 128, &length, buffer);
         glGetProgramResourceiv(program, GL_PROGRAM_INPUT, i, 1, props, 1, nullptr, params);
 
+        // Skip builtin inputs
+        if(strcmp(buffer, "gl_VertexID") == 0 || strcmp(buffer, "gl_InstanceID") == 0 ||
+           strcmp(buffer, "gl_DrawID") == 0|| strcmp(buffer, "gl_BaseVertex") == 0 ||
+           strcmp(buffer, "gl_BaseInstance") == 0)
+            continue;
+
         auto location = glGetProgramResourceIndex(program, GL_PROGRAM_INPUT, buffer);
         auto stride = Utils::getTypeSize(params[0]);
         auto format = Utils::getTypeFormat(params[0]);
