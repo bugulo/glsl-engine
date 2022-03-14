@@ -34,7 +34,7 @@ void Engine::init()
         throw std::runtime_error("Failed to initialize GLFW");
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     this->context = glfwCreateWindow(this->width, this->height, "GPU Engine", NULL, NULL);
