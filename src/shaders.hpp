@@ -145,6 +145,8 @@ const char *engineShaderSource = R"(
 #define STATE_PRESSED 1
 
 layout(std430, binding = 0) buffer EngineBuffer {
+    int width;
+    int height;
     double currentTime;
     double deltaTime;
     int mouseX;
@@ -198,6 +200,51 @@ const char *mathShaderSource = R"(
             vec4(0, 0, -(far + near) / (far - near), -1.0),
             vec4(0, 0, -2.0 * (far * near) / (far - near), 0)
         );
+    }
+
+    mat4 rotate(mat4 matrix, float angle, vec3 rotation_axis)
+    {
+        float c = cos(angle);
+        float s = sin(angle);
+
+        float x = rotation_axis.x; float y = rotation_axis.y; float z = rotation_axis.z;
+
+        mat4 r_matrix = mat4(
+            vec4(x*x*(1-c)+c,   y*x*(1-c)+z*s, z*x*(1-c)-y*s, 0),
+            vec4(x*y*(1-c)-z*s, y*y*(1-c)+c,   z*y*(1-c)+x*s, 0),
+            vec4(x*z*(1-c)+y*s, y*z*(1-c)-x*s, z*z*(1-c)+c,   0),
+            vec4(0, 0, 0, 1)
+        );
+        
+        return matrix * r_matrix;
+    }
+
+    mat4 translate(mat4 matrix, vec3 translation)
+    {
+        float x = translation.x; float y = translation.y; float z = translation.z;
+
+        mat4 t_matrix = mat4(
+            vec4(1, 0, 0, 0),
+            vec4(0, 1, 0, 0),
+            vec4(0, 0, 1, 0),
+            vec4(x, y, z, 1)
+        );
+
+        return matrix * t_matrix;
+    }
+
+    mat4 scale(mat4 matrix, vec3 scale_vector)
+    {
+        float x = scale_vector.x; float y = scale_vector.y; float z = scale_vector.z;
+
+        mat4 s_matrix = mat4(
+            vec4(x, 0, 0, 0),
+            vec4(0, y, 0, 0),
+            vec4(0, 0, z, 0),
+            vec4(0, 0, 0, 1)
+        );
+
+        return matrix * s_matrix;
     }
 )";
 
