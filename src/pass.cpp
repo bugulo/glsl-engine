@@ -37,6 +37,7 @@ GLuint Pass::createShader(GLenum type, std::string shaderSource, std::string id)
 {
     std::stringstream buffer;
     buffer << engineShaderSource;
+    buffer << mathShaderSource;
     buffer << "#define PASS_" << std::to_string(this->index) << std::endl;
     buffer << "#define PASS_" << std::to_string(this->index) << "_" << id << std::endl;
     buffer << shaderSource;

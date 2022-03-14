@@ -189,4 +189,16 @@ void set_drawcommand(uint offset, uint count, uint firstIndex, uint baseVertex, 
 }
 )";
 
+const char *mathShaderSource = R"(
+    mat4 perspective(float fov, float aspect, float near, float far) 
+    {
+        return mat4(
+            vec4(1.0 / (aspect * tan(fov / 2.0)), 0, 0, 0),
+            vec4(0, 1.0 / tan(fov / 2.0), 0, 0),
+            vec4(0, 0, -(far + near) / (far - near), -1.0),
+            vec4(0, 0, -2.0 * (far * near) / (far - near), 0)
+        );
+    }
+)";
+
 #endif
