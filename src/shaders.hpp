@@ -246,6 +246,25 @@ const char *mathShaderSource = R"(
 
         return matrix * s_matrix;
     }
+
+    mat4 lookAt(vec3 position, vec3 target, vec3 up)
+    {
+        vec3 d = normalize(position - target);
+        vec3 r = normalize(cross(up, d));
+        vec3 u = cross(d, r);
+
+        return mat4(
+            vec4(r.x, u.x, d.x, 0),
+            vec4(r.y, u.y, d.y, 0),
+            vec4(r.z, u.z, d.z, 0),
+            vec4(0, 0, 0, 1)
+        ) * mat4(
+            vec4(1, 0, 0, 0),
+            vec4(0, 1, 0, 0),
+            vec4(0, 0, 1, 0),
+            vec4(-position.x, -position.y, -position.z, 1)
+        );
+    }
 )";
 
 #endif
