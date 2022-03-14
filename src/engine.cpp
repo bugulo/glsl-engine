@@ -222,6 +222,11 @@ void Engine::destroy()
     glfwTerminate();
 
     this->context = nullptr;
+    this->passes.clear();
+    this->buffers.clear();
+    this->textures.clear();
+    this->params.clear();
+    this->lastFrameTime = 0;
     this->engineBuffer = {};
 }
 
