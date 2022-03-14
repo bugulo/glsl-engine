@@ -47,22 +47,17 @@ class Engine
 public:
     /*!
      * @brief Engine constructor
-     * @param width Window width
-     * @param height Window height
      */
-    Engine(int width, int height);
+    Engine();
 
     //! Engine destructor
     ~Engine();
 
     /*!
-     * @brief Upload shader into the engine and compile it 
+     * @brief Initialize engine with shader file
      * @param filename Path to the shader file
      */
-    void loadShader(std::string filename);
-
-    //! Initialize engine
-    void init();
+    void init(std::string filename);
 
     //! Update engine state (Run all passes one by one)
     void update();
@@ -99,13 +94,10 @@ public:
 
     //! Map of created buffers and it's ids
     std::map<std::string, Buffer*> buffers;
+
+    //! List of global params
+    std::map<std::string, std::string> params;
 private:
-    //! Window width
-    int width;
-
-    //! Window height
-    int height;
-
     //! OpenGL context
     GLFWwindow *context = nullptr;
 

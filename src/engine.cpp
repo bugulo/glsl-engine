@@ -11,11 +11,8 @@
 #include "pass.hpp"
 #include "buffer.hpp"
 
-Engine::Engine(int width, int height)
+Engine::Engine()
 {
-    this->width = width;
-    this->height = height;
-
     this->verbose = true;
 }
 
@@ -24,10 +21,30 @@ Engine::~Engine()
     this->destroy();
 }
 
-void Engine::init()
+void Engine::init(std::string filename)
 {
     if(this->context != nullptr)
         throw std::runtime_error("Context is already initialized");
+
+    std::ifstream stream(filename);
+
+    if(stream.fail())
+        throw std::invalid_argument("Could not open specified shader file");
+
+    std::stringstream buffer;
+    buffer << stream.rdbuf();
+
+    // Find all global params
+    std::smatch match;
+    std::string haystack (buffer.str());
+    while(std::regex_search(haystack, match, std::regex("#pragma PARAM (\\S+)(?:\\s(\\S+))?;")))
+    {
+        params[match.str(1)] = match.str(2);
+        haystack = match.suffix();
+    }
+
+    this->engineBuffer.width = this->params.contains("WIDTH") ? stoi(this->params["WIDTH"]) : 512;
+    this->engineBuffer.height = this->params.contains("HEIGHT") ? stoi(this->params["HEIGHT"]) : 512;
 
     // Initialize GLFW
     if(glfwInit() == GLFW_FALSE)
@@ -37,12 +54,16 @@ void Engine::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    this->context = glfwCreateWindow(this->width, this->height, "GPU Engine", NULL, NULL);
+    this->context = glfwCreateWindow(this->engineBuffer.width, this->engineBuffer.height, "GPU Engine", NULL, NULL);
 
     if(this->context == NULL)
         throw std::runtime_error("Failed to initialize window");
 
     glfwSetWindowUserPointer(this->context, this);
+    glfwMakeContextCurrent(context);
+
+    if(this->params.contains("CURSOR_DISABLED"))
+        glfwSetInputMode(context, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetFramebufferSizeCallback(context, [](GLFWwindow *context, int width, int height) {
         auto engine = static_cast<Engine*>(glfwGetWindowUserPointer(context));
@@ -64,13 +85,11 @@ void Engine::init()
         engine->mouse_btn_callback(context, button, action, mods);
     });
 
-    glfwMakeContextCurrent(context);
-
     // Initialize OpenGL
     if(glewInit() != GLEW_OK)
         throw std::runtime_error("Failed to initialize OpenGL");
 
-    glViewport(0, 0, this->width, this->height);
+    glViewport(0, 0, this->engineBuffer.width, this->engineBuffer.height);
     
     // Generate built-in buffers
 
@@ -87,6 +106,27 @@ void Engine::init()
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this->dcbo);
     glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 100 * sizeof(unsigned int) * 5, nullptr, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
+
+    for(size_t i = 0; i < MAX_PASS_COUNT; i++)
+    {
+        if(buffer.str().find("#ifdef PASS_" + std::to_string(i)) == std::string::npos)
+            break;
+
+        this->print("Compiling pass %zu\n", i);
+        auto pass = new Pass(this, i);
+
+        // Find all params of the pass
+        std::smatch match;
+        std::string haystack (buffer.str());
+        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(?:\\s(\\S+))?;")))
+        {
+            pass->params[match.str(1)] = match.str(2);
+            haystack = match.suffix();
+        }
+
+        pass->compile(buffer.str());
+        this->passes.push_back(pass);
+    }
 }
 
 void Engine::update()
@@ -199,8 +239,6 @@ void Engine::key_callback(GLFWwindow *context, int key, int scancode, int action
 
 void Engine::size_callback(GLFWwindow *context, int width, int height)
 {
-    this->width = width;
-    this->height = height;
     this->engineBuffer.width = width;
     this->engineBuffer.height = height;
     glViewport(0, 0, width, height);
@@ -215,41 +253,6 @@ void Engine::mouse_pos_callback(GLFWwindow *context, double xpos, double ypos)
 void Engine::mouse_btn_callback(GLFWwindow *context, int button, int action, int mods)
 {
     this->engineBuffer.btnState[button] = action;
-}
-
-void Engine::loadShader(std::string filename)
-{
-    if(this->context == nullptr)
-        throw std::runtime_error("Context is not initialized");
-
-    std::ifstream stream(filename);
-
-    if(stream.fail())
-        throw std::invalid_argument("Could not open specified shader file");
-
-    std::stringstream buffer;
-    buffer << stream.rdbuf();
-
-    for(size_t i = 0; i < MAX_PASS_COUNT; i++)
-    {
-        if(buffer.str().find("#ifdef PASS_" + std::to_string(i)) == std::string::npos)
-            break;
-
-        this->print("Compiling pass %zu\n", i);
-        auto pass = new Pass(this, i);
-
-        // Find all params of the pass
-        std::smatch match;
-        std::string haystack (buffer.str());
-        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(?:\\s(\\S+))?;")))
-        {
-            pass->params[match.str(1)] = match.str(2);
-            haystack = match.suffix();
-        }
-
-        pass->compile(buffer.str());
-        this->passes.push_back(pass);
-    }
 }
 
 GLuint Engine::createTexture(std::string name)

@@ -11,12 +11,11 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    auto engine = Engine(512, 512);
+    auto engine = Engine();
 
     try {
-        engine.init();
-        // Upload shader to the engine
-        engine.loadShader(std::string(argv[1]));
+        // Initialize engine with shader file
+        engine.init(std::string(argv[1]));
         // Update engine state while window is open
         while(!engine.shouldClose())
             engine.update();
