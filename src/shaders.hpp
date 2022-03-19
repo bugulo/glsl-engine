@@ -181,10 +181,10 @@ layout(std430, binding = 2) writeonly buffer DrawCommandBuffer {
     DrawCommand commands[100];
 } drawCommandBuffer;
 
-void set_drawcommand(uint offset, uint count, uint firstIndex, uint baseVertex, uint baseInstance)
+void set_drawcommand(uint offset, uint count, uint instances, uint firstIndex, uint baseVertex, uint baseInstance)
 {
     drawCommandBuffer.commands[offset].count = count;
-    drawCommandBuffer.commands[offset].instanceCount = 1;
+    drawCommandBuffer.commands[offset].instanceCount = instances;
     drawCommandBuffer.commands[offset].firstIndex = firstIndex;
     drawCommandBuffer.commands[offset].baseVertex = baseVertex;
     drawCommandBuffer.commands[offset].baseInstance = baseInstance;

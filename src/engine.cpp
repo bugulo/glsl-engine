@@ -92,6 +92,7 @@ void Engine::init(std::string filename)
     if(glewInit() != GLEW_OK)
         throw std::runtime_error("Failed to initialize OpenGL");
 
+    glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, this->engineBuffer.width, this->engineBuffer.height);
     
     // Generate built-in buffers
@@ -137,7 +138,8 @@ void Engine::update()
     if(this->context == nullptr)
         throw std::runtime_error("Context is not initialized");
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Update time information
     engineBuffer.currentTime = glfwGetTime();
@@ -186,7 +188,11 @@ void Engine::update()
         {
             if(pass->getVertexArrayId() != 0)
                 glBindVertexArray(pass->getVertexArrayId());
-            glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 100, 0);
+
+            if(pass->params.contains("EBO"))
+                glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 100, 0);
+            else
+                glMultiDrawArraysIndirect(GL_TRIANGLES, nullptr, 100, sizeof(unsigned int));
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
