@@ -92,7 +92,13 @@ void Engine::init(std::string filename)
     if(glewInit() != GLEW_OK)
         throw std::runtime_error("Failed to initialize OpenGL");
 
-    glEnable(GL_DEPTH_TEST);
+    if(this->params.contains("ENABLE_DEPTH_TEST"))
+        glEnable(GL_DEPTH_TEST);
+    if(this->params.contains("ENABLE_STENCIL_TEST"))
+        glEnable(GL_STENCIL_TEST);
+    if(this->params.contains("ENABLE_CULL_FACE"))
+        glEnable(GL_CULL_FACE);
+
     glViewport(0, 0, this->engineBuffer.width, this->engineBuffer.height);
     
     // Generate built-in buffers
