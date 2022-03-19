@@ -82,6 +82,15 @@ void Pass::compile(std::string source)
     if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_FRAGMENT_SHADER") != std::string::npos)
         this->shaders[GL_FRAGMENT_SHADER] = this->createShader(GL_FRAGMENT_SHADER, source, "FRAGMENT_SHADER");
 
+    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_GEOMETRY_SHADER") != std::string::npos)
+        this->shaders[GL_GEOMETRY_SHADER] = this->createShader(GL_GEOMETRY_SHADER, source, "GEOMETRY_SHADER");
+
+    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_TESS_CONTROL_SHADER") != std::string::npos)
+        this->shaders[GL_TESS_CONTROL_SHADER] = this->createShader(GL_TESS_CONTROL_SHADER, source, "TESS_CONTROL_SHADER");
+
+    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_TESS_EVALUATION_SHADER") != std::string::npos)
+        this->shaders[GL_TESS_EVALUATION_SHADER] = this->createShader(GL_TESS_EVALUATION_SHADER, source, "TESS_EVALUATION_SHADER");
+
     // TODO: geometry and tesselation shader
 
     auto program = glCreateProgram();
