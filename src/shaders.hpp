@@ -192,6 +192,15 @@ void set_drawcommand(uint offset, uint count, uint instances, uint firstIndex, u
 )";
 
 const char *mathShaderSource = R"(
+    float rand() {
+        vec2 seed = vec2(engineBuffer.currentTime, engineBuffer.currentTime);
+        return fract(sin(dot(seed, vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    int randInt(int left, int right) {
+        return int(rand() * (right - left + 1) + left);
+    }
+
     mat4 perspective(float fov, float aspect, float near, float far) 
     {
         return mat4(
