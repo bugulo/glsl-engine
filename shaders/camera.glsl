@@ -54,8 +54,8 @@ layout(std430, binding = 5) buffer Camera {
                 4, 5, 0, 0, 5, 1
             );
 
-            set_drawcommand(0, 36, 0, 0, 0);
-            set_drawcommand(1, 36, 0, 0, 0);
+            set_drawcommand(0, 36, 1, 0, 0, 0);
+            set_drawcommand(1, 36, 1, 0, 0, 0);
 
             camera.lastMouseX = float(engineBuffer.mouseX);
             camera.lastMouseY = float(engineBuffer.mouseY);

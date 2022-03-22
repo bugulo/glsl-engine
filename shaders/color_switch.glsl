@@ -42,7 +42,7 @@ void set_index(uint offset, uvec3 position) {
                 set_index(0, uvec3(0, 1, 3));
                 set_index(1, uvec3(1, 2, 3));
 
-                set_drawcommand(0, 6, 0, 0, 0);
+                set_drawcommand(0, 6, 1, 0, 0, 0);
             //}
         }
     #endif
