@@ -122,8 +122,8 @@ private:
     //! List of compiled pass instances
     std::vector<Pass*> passes;
 
-    //! Input Buffer Object
-    GLuint ibo;
+    //! Engine Buffer Object
+    GLuint ebo;
 
     //! Work Group Buffer Object
     GLuint wgbo;

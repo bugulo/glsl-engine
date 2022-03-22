@@ -103,19 +103,19 @@ void Engine::init(std::string filename)
     
     // Generate built-in buffers
 
-    glGenBuffers(1, &this->ibo); // Input Buffer Object
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ibo);
+    glCreateBuffers(1, &this->ebo); // Engine Buffer Object
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ebo);
 
     int workGroups[3] = {1, 1, 1};
-    glGenBuffers(1, &this->wgbo); // Work Group Buffer Object
+    glCreateBuffers(1, &this->wgbo); // Work Group Buffer Object
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, this->wgbo);
-    glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(workGroups), &workGroups, GL_DYNAMIC_DRAW);
+    glNamedBufferData(this->wgbo, sizeof(workGroups), &workGroups, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, this->wgbo);
 
     unsigned int drawCommands[100 * 5] = {0};
-    glGenBuffers(1, &this->dcbo); // Draw Command Buffer Object
+    glCreateBuffers(1, &this->dcbo); // Draw Command Buffer Object
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this->dcbo);
-    glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 100 * sizeof(unsigned int) * 5, &drawCommands, GL_MAP_WRITE_BIT);
+    glNamedBufferStorage(this->dcbo, 100 * sizeof(unsigned int) * 5, &drawCommands, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
 
     for(size_t i = 0; i < MAX_PASS_COUNT; i++)
@@ -153,8 +153,7 @@ void Engine::update()
     engineBuffer.deltaTime = engineBuffer.currentTime - lastFrameTime;
     lastFrameTime = engineBuffer.currentTime;
 
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->ibo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(this->engineBuffer), &this->engineBuffer, GL_STATIC_READ);
+    glNamedBufferData(this->ebo, sizeof(this->engineBuffer), &this->engineBuffer, GL_STATIC_READ);
 
     for(auto pass : this->passes)
     {
@@ -227,7 +226,7 @@ void Engine::destroy()
     for(auto const& [name, id] : this->textures)
         glDeleteTextures(1, &id);
 
-    glDeleteBuffers(1, &this->ibo);
+    glDeleteBuffers(1, &this->ebo);
     glDeleteBuffers(1, &this->wgbo);
     glDeleteBuffers(1, &this->dcbo);
     
