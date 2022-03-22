@@ -30,4 +30,4 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/deps/glew EXCLUDE_FROM_ALL)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} glfw libglew_static -static)
+target_link_libraries(${CMAKE_PROJECT_NAME} glfw libglew_static)

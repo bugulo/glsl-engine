@@ -148,11 +148,11 @@ void Pass::parseProgramInputs()
         GLsizei length;
         GLchar buffer[128] = {}; // TODO: we should fetch max length from gpu
 
-        GLenum props[1] = {GL_TYPE};
-        GLint params[1] = {0};
+        GLenum props[2] = {GL_TYPE, GL_LOCATION};
+        GLint params[2] = {0};
 
         glGetProgramResourceName(program, GL_PROGRAM_INPUT, i, 128, &length, buffer);
-        glGetProgramResourceiv(program, GL_PROGRAM_INPUT, i, 1, props, 1, nullptr, params);
+        glGetProgramResourceiv(program, GL_PROGRAM_INPUT, i, 2, props, 2, nullptr, params);
 
         // Skip builtin inputs
         if(strcmp(buffer, "gl_VertexID") == 0 || strcmp(buffer, "gl_InstanceID") == 0 ||
@@ -160,13 +160,12 @@ void Pass::parseProgramInputs()
            strcmp(buffer, "gl_BaseInstance") == 0)
             continue;
 
-        auto location = glGetProgramResourceIndex(program, GL_PROGRAM_INPUT, buffer);
         auto stride = Utils::getTypeSize(params[0]);
         auto format = Utils::getTypeFormat(params[0]);
 
-        glEnableVertexArrayAttrib(this->varray, location);
-        glVertexArrayAttribFormat(this->varray, location, std::get<0>(format), std::get<1>(format), GL_FALSE, currentStride);
-        glVertexArrayAttribBinding(this->varray, location, 0);
+        glEnableVertexArrayAttrib(this->varray, params[1]);
+        glVertexArrayAttribFormat(this->varray, params[1], std::get<0>(format), std::get<1>(format), GL_FALSE, currentStride);
+        glVertexArrayAttribBinding(this->varray, params[1], 0);
         
         currentStride += stride;
     }
