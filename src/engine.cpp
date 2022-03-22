@@ -112,9 +112,10 @@ void Engine::init(std::string filename)
     glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(workGroups), &workGroups, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, this->wgbo);
 
+    unsigned int drawCommands[100 * 5] = {0};
     glGenBuffers(1, &this->dcbo); // Draw Command Buffer Object
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this->dcbo);
-    glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 100 * sizeof(unsigned int) * 5, nullptr, GL_MAP_WRITE_BIT);
+    glBufferStorage(GL_DRAW_INDIRECT_BUFFER, 100 * sizeof(unsigned int) * 5, &drawCommands, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
 
     for(size_t i = 0; i < MAX_PASS_COUNT; i++)
