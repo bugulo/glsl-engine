@@ -8,11 +8,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "pass.hpp"
+#include "program.hpp"
 
-#define MAX_PASS_COUNT 100
-
-class Pass;
+class Program;
 class Buffer;
 
 struct EngineBuffer
@@ -59,7 +57,7 @@ public:
      */
     void init(std::string filename);
 
-    //! Update engine state (Run all passes one by one)
+    //! Update engine state (Run all programs one by one)
     void update();
 
     //! Free resources allocated by engine
@@ -85,15 +83,15 @@ public:
      * @brief Create buffer
      * @param name Buffer name
      * @param size Size of the buffer
-     * @return Buffer instance
+     * @return OpenGL buffer ID
      */
-    Buffer* createBuffer(std::string name, int size);
+    GLuint createBuffer(std::string name, int size);
 
     //! Map of created textures and it's ids
     std::map<std::string, GLuint> textures;
 
     //! Map of created buffers and it's ids
-    std::map<std::string, Buffer*> buffers;
+    std::map<std::string, GLuint> buffers;
 
     //! List of global params
     std::map<std::string, std::string> params;
@@ -119,8 +117,8 @@ private:
     //! Mouse button state change callback
     void mouse_btn_callback(GLFWwindow *context, int button, int action, int mods);
 
-    //! List of compiled pass instances
-    std::vector<Pass*> passes;
+    //! List of compiled program instances
+    std::vector<Program*> programs;
 
     //! Engine Buffer Object
     GLuint ebo;

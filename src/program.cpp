@@ -1,4 +1,4 @@
-#include "pass.hpp"
+#include "program.hpp"
 
 #include <map>
 #include <regex>
@@ -10,16 +10,15 @@
 
 #include "engine.hpp"
 #include "shaders.hpp"
-#include "buffer.hpp"
 #include "utils.hpp"
 
-Pass::Pass(Engine *engine, int index)
+Program::Program(Engine *engine, int index)
 {
     this->engine = engine;
     this->index = index;
 }
 
-Pass::~Pass()
+Program::~Program()
 {
     for(auto const& [type, id] : this->shaders)
         glDeleteShader(id);
@@ -33,13 +32,13 @@ Pass::~Pass()
     glDeleteProgram(this->program);
 }
 
-GLuint Pass::createShader(GLenum type, std::string shaderSource, std::string id)
+GLuint Program::createShader(GLenum type, std::string shaderSource, std::string id)
 {
     std::stringstream buffer;
     buffer << engineShaderSource;
     buffer << mathShaderSource;
-    buffer << "#define PASS_" << std::to_string(this->index) << std::endl;
-    buffer << "#define PASS_" << std::to_string(this->index) << "_" << id << std::endl;
+    buffer << "#define PROGRAM_" << std::to_string(this->index) << std::endl;
+    buffer << "#define PROGRAM_" << std::to_string(this->index) << "_" << id << std::endl;
     buffer << shaderSource;
 
     auto string = buffer.str();
@@ -64,34 +63,32 @@ GLuint Pass::createShader(GLenum type, std::string shaderSource, std::string id)
     return shader;
 }
 
-void Pass::compile(std::string source)
+void Program::compile(std::string source)
 {
     if(this->program != 0)
-        throw std::runtime_error("Pass was already compiled");
+        throw std::runtime_error("Program was already compiled");
 
     if(this->params.contains("ONCE"))
         this->isRanOnce = true;
         
-    // Compile shaders that are part of the pass
-    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_COMPUTE_SHADER") != std::string::npos)
+    // Compile shaders that are part of the program
+    if(source.find("#ifdef PROGRAM_" + std::to_string(this->index) + "_COMPUTE_SHADER") != std::string::npos)
         this->shaders[GL_COMPUTE_SHADER] = this->createShader(GL_COMPUTE_SHADER, source, "COMPUTE_SHADER");
 
-    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_VERTEX_SHADER") != std::string::npos)
+    if(source.find("#ifdef PROGRAM_" + std::to_string(this->index) + "_VERTEX_SHADER") != std::string::npos)
         this->shaders[GL_VERTEX_SHADER] = this->createShader(GL_VERTEX_SHADER, source, "VERTEX_SHADER");
 
-    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_FRAGMENT_SHADER") != std::string::npos)
+    if(source.find("#ifdef PROGRAM_" + std::to_string(this->index) + "_FRAGMENT_SHADER") != std::string::npos)
         this->shaders[GL_FRAGMENT_SHADER] = this->createShader(GL_FRAGMENT_SHADER, source, "FRAGMENT_SHADER");
 
-    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_GEOMETRY_SHADER") != std::string::npos)
+    if(source.find("#ifdef PROGRAM_" + std::to_string(this->index) + "_GEOMETRY_SHADER") != std::string::npos)
         this->shaders[GL_GEOMETRY_SHADER] = this->createShader(GL_GEOMETRY_SHADER, source, "GEOMETRY_SHADER");
 
-    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_TESS_CONTROL_SHADER") != std::string::npos)
+    if(source.find("#ifdef PROGRAM_" + std::to_string(this->index) + "_TESS_CONTROL_SHADER") != std::string::npos)
         this->shaders[GL_TESS_CONTROL_SHADER] = this->createShader(GL_TESS_CONTROL_SHADER, source, "TESS_CONTROL_SHADER");
 
-    if(source.find("#ifdef PASS_" + std::to_string(this->index) + "_TESS_EVALUATION_SHADER") != std::string::npos)
+    if(source.find("#ifdef PROGRAM_" + std::to_string(this->index) + "_TESS_EVALUATION_SHADER") != std::string::npos)
         this->shaders[GL_TESS_EVALUATION_SHADER] = this->createShader(GL_TESS_EVALUATION_SHADER, source, "TESS_EVALUATION_SHADER");
-
-    // TODO: geometry and tesselation shader
 
     auto program = glCreateProgram();
     for(const auto &x : this->shaders)
@@ -124,7 +121,7 @@ void Pass::compile(std::string source)
     this->parseProgramInputs();
 }
 
-void Pass::parseProgramInputs()
+void Program::parseProgramInputs()
 {
     // Parse program inputs only if we work with vertex data
     if(this->isCompute())
@@ -132,17 +129,16 @@ void Pass::parseProgramInputs()
 
     // User needs to specify vertex buffer so we can generate vertex array
     if(!this->params.contains("VBO"))
-        throw std::runtime_error("VBO param is missing in PASS_" + std::to_string(this->index));
+        throw std::runtime_error("VBO param is missing in PROGRAM_" + std::to_string(this->index));
 
     if(!this->engine->buffers.contains(this->params["VBO"]))
         throw std::runtime_error("Buffer referenced in VAO param does not exist");
 
-    glCreateVertexArrays(1, &this->varray);
-
     GLint inputCount; 
     glGetProgramInterfaceiv(program, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &inputCount);
 
-    GLsizei currentStride = 0;
+    std::vector<std::tuple<GLint, GLint>> inputs;
+
     for(GLint i = 0; i < inputCount; i++)
     {
         GLsizei length;
@@ -160,17 +156,27 @@ void Pass::parseProgramInputs()
            strcmp(buffer, "gl_BaseInstance") == 0)
             continue;
 
-        auto stride = Utils::getTypeSize(params[0]);
-        auto format = Utils::getTypeFormat(params[0]);
+        inputs.push_back(std::make_tuple(params[0], params[1]));
+    }
 
-        glEnableVertexArrayAttrib(this->varray, params[1]);
-        glVertexArrayAttribFormat(this->varray, params[1], std::get<0>(format), std::get<1>(format), GL_FALSE, currentStride);
-        glVertexArrayAttribBinding(this->varray, params[1], 0);
+    sort(inputs.begin(), inputs.end());
+
+    glCreateVertexArrays(1, &this->varray);
+
+    GLsizei currentStride = 0;
+    for(auto const& [type, location] : inputs)
+    {
+        auto stride = Utils::getTypeSize(type);
+        auto format = Utils::getTypeFormat(type);
+
+        glEnableVertexArrayAttrib(this->varray, location);
+        glVertexArrayAttribFormat(this->varray, location, std::get<0>(format), std::get<1>(format), GL_FALSE, currentStride);
+        glVertexArrayAttribBinding(this->varray, location, 0);
         
         currentStride += stride;
     }
 
-    glVertexArrayVertexBuffer(this->varray, 0, this->engine->buffers[this->params["VBO"]]->getId(), 0, currentStride);
+    glVertexArrayVertexBuffer(this->varray, 0, this->engine->buffers[this->params["VBO"]], 0, currentStride);
 
     // If element buffer was specified, bind it to vertex array
     if(this->params.contains("EBO"))
@@ -178,12 +184,20 @@ void Pass::parseProgramInputs()
         if(!this->engine->buffers.contains(this->params["EBO"]))
             throw std::runtime_error("Buffer referenced in EBO param does not exist");
 
-        glVertexArrayElementBuffer(this->varray, this->engine->buffers[this->params["EBO"]]->getId());
+        glVertexArrayElementBuffer(this->varray, this->engine->buffers[this->params["EBO"]]);
     }
 }
 
-void Pass::parseProgramOutputs()
+void Program::parseProgramOutputs()
 {
+    // Parse program inputs only if we work with vertex data
+    if(this->isCompute())
+        return;
+
+    // User needs to specify custom framebuffer creation
+    if(!this->params.contains("CUSTOM_FRAMEBUFFER"))
+        return;
+
     GLint outputCount; 
     glGetProgramInterfaceiv(program, GL_PROGRAM_OUTPUT, GL_ACTIVE_RESOURCES, &outputCount);
 
@@ -198,14 +212,6 @@ void Pass::parseProgramOutputs()
         outputs.push_back(std::make_tuple(location, std::string(buffer)));
     }
 
-    // If there are no outputs, there is no reason to generate framebuffer
-    if(outputs.size() == 0)
-        return;
-
-    // Don't generate new framebuffer when rendering to default one
-    if(std::get<1>(outputs[0]) == "defaultOutput")
-        return;
-
     glCreateFramebuffers(1, &this->framebuffer);
 
     for(auto const& [location, name] : outputs)
@@ -215,7 +221,7 @@ void Pass::parseProgramOutputs()
     }
 }
 
-void Pass::parseProgramUniforms()
+void Program::parseProgramUniforms()
 {
     GLint uniformCount;
     glGetProgramInterfaceiv(program, GL_UNIFORM, GL_ACTIVE_RESOURCES, &uniformCount);
@@ -228,29 +234,29 @@ void Pass::parseProgramUniforms()
         GLchar buffer[200] = {0}; // TODO: we should fetch max length from gpu
 
         glGetActiveUniform(program, i, 200, &length, &size, &type, buffer);
-        auto location = glGetUniformLocation(program, buffer);
 
         if(type != GL_SAMPLER_2D && type != GL_IMAGE_2D)
             throw std::runtime_error("Unsupported uniform type");
 
+        auto location = glGetUniformLocation(program, buffer);
         auto texture = this->engine->createTexture(std::string(buffer));
-        this->inputTextures.push_back(std::make_tuple(texture, type, location));
+        this->textures.push_back(std::make_tuple(texture, type, location));
     }
 }
 
-void Pass::parseProgramBuffers()
+void Program::parseProgramBuffers()
 {
     GLint bufferCount;
     glGetProgramInterfaceiv(program, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &bufferCount);
 
     for(GLint i = 0; i < bufferCount; ++i) 
     {
-        GLenum props[3] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
-        GLint params[3] = {0};
+        GLenum props[2] = {GL_BUFFER_BINDING, GL_BUFFER_DATA_SIZE};
+        GLint params[2] = {0};
 
         GLchar buffer[201] = {}; // TODO: we should fetch max length from gpu
         glGetProgramResourceName(program, GL_SHADER_STORAGE_BLOCK, i, 201, nullptr, buffer);
-        glGetProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, i, 3, props, 3, nullptr, params);
+        glGetProgramResourceiv(program, GL_SHADER_STORAGE_BLOCK, i, 2, props, 2, nullptr, params);
 
         // Skip builtin buffers
         if(strcmp(buffer, "EngineBuffer") == 0 || strcmp(buffer, "DrawCommandBuffer") == 0 ||
@@ -261,22 +267,22 @@ void Pass::parseProgramBuffers()
     }
 }
 
-GLuint Pass::getProgramId()
+GLuint Program::getProgramId()
 {
     return this->program;
 }
 
-GLuint Pass::getFramebufferId()
+GLuint Program::getFramebufferId()
 {
     return this->framebuffer;
 }
 
-GLuint Pass::getVertexArrayId()
+GLuint Program::getVertexArrayId()
 {
     return this->varray;
 }
 
-bool Pass::isCompute()
+bool Program::isCompute()
 {
     return this->shaders.contains(GL_COMPUTE_SHADER);
 }

@@ -8,8 +8,7 @@
 
 #include <GL/glew.h>
 
-#include "pass.hpp"
-#include "buffer.hpp"
+#include "program.hpp"
 
 Engine::Engine()
 {
@@ -102,7 +101,6 @@ void Engine::init(std::string filename)
     glViewport(0, 0, this->engineBuffer.width, this->engineBuffer.height);
     
     // Generate built-in buffers
-
     glCreateBuffers(1, &this->ebo); // Engine Buffer Object
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ebo);
 
@@ -118,25 +116,27 @@ void Engine::init(std::string filename)
     glNamedBufferStorage(this->dcbo, 100 * sizeof(unsigned int) * 5, &drawCommands, GL_MAP_WRITE_BIT);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->dcbo);
 
-    for(size_t i = 0; i < MAX_PASS_COUNT; i++)
+    // Find all params of the program
+    haystack.assign(buffer.str());
+    while(std::regex_search(haystack, match, std::regex("#ifdef PROGRAM_(\\d+)\\s")))
     {
-        if(buffer.str().find("#ifdef PASS_" + std::to_string(i)) == std::string::npos)
-            break;
+        auto id = stoi(match[1]);
+        this->print("Compiling program %zu\n", id);
+        auto program = new Program(this, id);
 
-        this->print("Compiling pass %zu\n", i);
-        auto pass = new Pass(this, i);
-
-        // Find all params of the pass
-        std::smatch match;
-        std::string haystack (buffer.str());
-        while(std::regex_search(haystack, match, std::regex("#pragma PASS_" + std::to_string(i) + + "_PARAM (\\S+)(?:\\s(?:(\\w+)|\\\"([^\"]*)\\\"))?;")))
+        // Find all params of the program
+        std::string nhaystack (buffer.str());
+        std::smatch nmatch;
+        while(std::regex_search(nhaystack, nmatch, std::regex("#pragma PROGRAM_" + std::to_string(id) + + "_PARAM (\\S+)(?:\\s(?:(\\w+)|\\\"([^\"]*)\\\"))?;")))
         {
-            pass->params[match.str(1)] = match[3].matched ? match.str(3) : match.str(2);
-            haystack = match.suffix();
+            program->params[nmatch.str(1)] = nmatch[3].matched ? nmatch.str(3) : nmatch.str(2);
+            nhaystack = nmatch.suffix();
         }
 
-        pass->compile(buffer.str());
-        this->passes.push_back(pass);
+        program->compile(buffer.str());
+        this->programs.push_back(program);
+
+        haystack = match.suffix();
     }
 }
 
@@ -155,21 +155,18 @@ void Engine::update()
 
     glNamedBufferData(this->ebo, sizeof(this->engineBuffer), &this->engineBuffer, GL_STATIC_READ);
 
-    for(auto pass : this->passes)
+    for(auto program : this->programs)
     {
-        if(pass->isIgnored)
+        if(program->isIgnored)
             continue;
 
-        glUseProgram(pass->getProgramId());
+        glUseProgram(program->getProgramId());
 
-        for(auto const& [buffer, point] : pass->buffers)
-            buffer->bind(point);
-
-        if(pass->getFramebufferId() != 0)
-            glBindFramebuffer(GL_FRAMEBUFFER, pass->getFramebufferId());
+        for(auto const& [buffer, point] : program->buffers)
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, point, buffer);
 
         int i = 0;
-        for(auto const& [texture, type, location] : pass->inputTextures)
+        for(auto const& [texture, type, location] : program->textures)
         {
             if(type == GL_IMAGE_2D)
             {
@@ -185,27 +182,30 @@ void Engine::update()
             i++;
         }
 
-        if(pass->isCompute() == true)
+        if(program->isCompute() == true)
         {
             glDispatchComputeIndirect(0);
             glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         }
         else
         {
-            if(pass->getVertexArrayId() != 0)
-                glBindVertexArray(pass->getVertexArrayId());
+            if(program->getVertexArrayId() != 0)
+                glBindVertexArray(program->getVertexArrayId());
 
-            if(pass->params.contains("EBO"))
+            if(program->getFramebufferId() != 0)
+                glBindFramebuffer(GL_FRAMEBUFFER, program->getFramebufferId());
+
+            if(program->params.contains("EBO"))
                 glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, nullptr, 100, 0);
             else
                 glMultiDrawArraysIndirect(GL_TRIANGLES, nullptr, 100, sizeof(unsigned int));
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glBindVertexArray(0);
         }
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glBindVertexArray(0);
-
-        if(pass->isRanOnce)
-            pass->isIgnored = true;
+        if(program->isRanOnce)
+            program->isIgnored = true;
     }
     
     glfwPollEvents();
@@ -217,11 +217,11 @@ void Engine::destroy()
     if(this->context == nullptr)
         return;
 
-    for(auto pass : this->passes)        
-        delete pass;
+    for(auto program : this->programs)        
+        delete program;
 
     for(auto const& [name, buffer] : this->buffers)
-        delete buffer;
+        glDeleteBuffers(1, &buffer);
 
     for(auto const& [name, id] : this->textures)
         glDeleteTextures(1, &id);
@@ -234,7 +234,7 @@ void Engine::destroy()
     glfwTerminate();
 
     this->context = nullptr;
-    this->passes.clear();
+    this->programs.clear();
     this->buffers.clear();
     this->textures.clear();
     this->params.clear();
@@ -302,14 +302,14 @@ GLuint Engine::createTexture(std::string name)
     return texture;
 }
 
-Buffer* Engine::createBuffer(std::string name, int size)
+GLuint Engine::createBuffer(std::string name, int size)
 {
     if(this->context == nullptr)
         throw std::runtime_error("Context is not initialized");
     
     if(this->buffers.contains(name))
     {
-        this->print("- Loaded buffer %s with ID: %d\n", name.c_str(), this->buffers[name]->getId());
+        this->print("- Loaded buffer %s with ID: %d\n", name.c_str(), this->buffers[name]);
         return this->buffers[name];
     }
 
@@ -322,9 +322,12 @@ Buffer* Engine::createBuffer(std::string name, int size)
 
     this->print("- Creating buffer: %s (%db)\n", name.c_str(), size);
 
-    auto buffer = new Buffer(this, name, size);
+    GLuint buffer;
+    glCreateBuffers(1, &buffer);
+    glNamedBufferData(buffer, size, NULL, GL_DYNAMIC_DRAW);
+
     this->buffers[name] = buffer;
-    this->print("- Loaded buffer: %s with ID: %d\n", name.c_str(), buffer->getId());
+    this->print("- Loaded buffer: %s with ID: %d\n", name.c_str(), buffer);
     return buffer;
 }
 

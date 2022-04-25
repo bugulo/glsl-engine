@@ -1,5 +1,5 @@
-#ifndef PASS_H
-#define PASS_H
+#ifndef PROGRAM_H
+#define PROGRAM_H
 
 #include <map>
 #include <tuple>
@@ -13,27 +13,27 @@
 class Engine;
 class Buffer;
 
-class Pass
+class Program
 {
 public:
     /*!
-     * @brief Pass constructor
+     * @brief Program constructor
      * @param engine Engine instance
-     * @param index Index of the pass
+     * @param index Index of the Program
      */
-    Pass(Engine *engine, int index);
+    Program(Engine *engine, int index);
 
-    //! Pass destructor
-    ~Pass();
+    //! Program destructor
+    ~Program();
 
-    //! Compile pass with provided source
+    //! Compile program with provided source
     void compile(std::string source);
 
-    //! List of program's input textures, it's type and location
-    std::vector<std::tuple<GLuint, GLenum, GLuint>> inputTextures;
+    //! List of program's textures, it's type and location
+    std::vector<std::tuple<GLuint, GLenum, GLuint>> textures;
 
     //! List of program's buffers and it's binding points
-    std::vector<std::tuple<Buffer*, int>> buffers;
+    std::vector<std::tuple<GLuint, int>> buffers;
 
     //! List of program's params
     std::map<std::string, std::string> params;
@@ -46,20 +46,21 @@ public:
 
     //! Get OpenGL vertex array ID
     GLuint getVertexArrayId();
+    
 
     //! Whether the program contains compute shader
     bool isCompute();
 
-    //! Whether the pass is ignored
+    //! Whether the program is ignored
     bool isIgnored = false;
 
-    //! Whether the pass should run only once
+    //! Whether the program should run only once
     bool isRanOnce = false;
 private:
     //! Engine instance
     Engine *engine;
     
-    //! Index of the pass
+    //! Index of the program
     int index;
 
     //! Map of compiled shaders by it's type
@@ -78,7 +79,7 @@ private:
     void parseProgramBuffers();
 
     /*!
-     * @brief Create and compile shader of the pass
+     * @brief Create and compile shader of the program
      * @param type Shader type
      * @param shaderSource Shader source
      * @param id Shader GLSL identificator
