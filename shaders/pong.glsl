@@ -87,10 +87,10 @@ layout(std430, binding = 7) buffer Objects {
     Transform ball;
 } objects;
 
-#ifdef PASS_0
-    #pragma PASS_0_PARAM ONCE;
+#ifdef PROGRAM_0
+    #pragma PROGRAM_0_PARAM ONCE;
 
-    #ifdef PASS_0_COMPUTE_SHADER
+    #ifdef PROGRAM_0_COMPUTE_SHADER
         layout(local_size_x = 1) in;
 
         void main() {
@@ -173,8 +173,8 @@ layout(std430, binding = 7) buffer Objects {
     #endif
 #endif
 
-#ifdef PASS_1
-    #ifdef PASS_1_COMPUTE_SHADER
+#ifdef PROGRAM_1
+    #ifdef PROGRAM_1_COMPUTE_SHADER
         layout(local_size_x = 1) in;
 
         void main()
@@ -213,10 +213,10 @@ layout(std430, binding = 7) buffer Objects {
     #endif
 #endif
 
-#ifdef PASS_2
-    #pragma PASS_2_PARAM VBO VBO;
+#ifdef PROGRAM_2
+    #pragma PROGRAM_2_PARAM VBO VBO;
 
-    #ifdef PASS_2_VERTEX_SHADER
+    #ifdef PROGRAM_2_VERTEX_SHADER
         layout (location = 0) in vec3 aPos;
         layout (location = 1) in vec3 aNormal;
 
@@ -262,7 +262,7 @@ layout(std430, binding = 7) buffer Objects {
         }
     #endif
 
-    #ifdef PASS_2_FRAGMENT_SHADER
+    #ifdef PROGRAM_2_FRAGMENT_SHADER
         out vec4 defaultOutput;
 
         in vec3 Normal;
