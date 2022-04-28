@@ -1,3 +1,5 @@
+// Implementation of comparison.glsl without the engine
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 

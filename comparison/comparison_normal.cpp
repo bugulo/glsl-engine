@@ -1,3 +1,5 @@
+// Implementation of comparison.glsl without the engine using uniform variables instead of SSBOs
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -7,7 +9,7 @@
 
 const char *vertexShaderSource = R"(
     #version 460
-    
+
     layout (location = 0) in vec3 Position;
 
     void main()
