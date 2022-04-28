@@ -1,5 +1,6 @@
 #include "engine.hpp"
 
+#include <chrono>
 #include <regex>
 #include <cstdarg>
 #include <fstream>
@@ -142,6 +143,8 @@ void Engine::init(std::string filename)
 
 void Engine::update()
 {
+    auto startTime = std::chrono::high_resolution_clock::now();
+
     if(this->context == nullptr)
         throw std::runtime_error("Context is not initialized");
 
@@ -210,6 +213,12 @@ void Engine::update()
     
     glfwPollEvents();
     glfwSwapBuffers(this->context);
+
+    auto stopTime = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stopTime - startTime);
+
+    if(this->params.contains("BENCHMARK"))
+        this->print("\rLast frame execution time: %d microseconds", duration);
 }
 
 void Engine::destroy()

@@ -23,7 +23,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_BUILD_TYPE Debug)
 set(EXECUTABLE_OUTPUT_PATH "bin")
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
+add_executable(${CMAKE_PROJECT_NAME}_comparison_equal comparison/comparison_equal.cpp)
+add_executable(${CMAKE_PROJECT_NAME}_comparison_normal comparison/comparison_normal.cpp)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(${PROJECT_SOURCE_DIR}/deps/glew EXCLUDE_FROM_ALL)
@@ -31,3 +34,5 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/deps/glew EXCLUDE_FROM_ALL)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} glfw libglew_static)
+target_link_libraries(${CMAKE_PROJECT_NAME}_comparison_equal glfw libglew_static)
+target_link_libraries(${CMAKE_PROJECT_NAME}_comparison_normal glfw libglew_static)
