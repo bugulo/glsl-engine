@@ -46,6 +46,7 @@ int main()
         throw std::runtime_error("Failed to initialize window");
 
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
 
     if(glewInit() != GLEW_OK)
         throw std::runtime_error("Failed to initialize OpenGL");
@@ -98,6 +99,8 @@ int main()
     glVertexArrayAttribBinding(vertexArray, 0, 0);
     glVertexArrayVertexBuffer(vertexArray, 0, vertexBuffer, 0, 3 * sizeof(GL_FLOAT));
 
+    int location = glGetUniformLocation(program, "Color");
+
     while(!glfwWindowShouldClose(window))
     {
         auto start = std::chrono::high_resolution_clock::now();
@@ -109,8 +112,6 @@ int main()
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        int location = glGetUniformLocation(program, "Color");
 
         glUseProgram(program);
 

@@ -64,6 +64,7 @@ void Engine::init(std::string filename)
 
     glfwSetWindowUserPointer(this->context, this);
     glfwMakeContextCurrent(context);
+    glfwSwapInterval(0);
 
     if(this->params.contains("CURSOR_DISABLED"))
         glfwSetInputMode(context, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -218,7 +219,7 @@ void Engine::update()
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stopTime - startTime);
 
     if(this->params.contains("BENCHMARK"))
-        this->print("\rLast frame execution time: %d microseconds", duration);
+        this->print("Last frame execution time: %d microseconds\n", duration);
 }
 
 void Engine::destroy()

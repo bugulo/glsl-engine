@@ -71,6 +71,7 @@ int main()
         throw std::runtime_error("Failed to initialize window");
 
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
 
     if(glewInit() != GLEW_OK)
         throw std::runtime_error("Failed to initialize OpenGL");
