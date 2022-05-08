@@ -144,7 +144,7 @@ void Program::parseProgramInputs()
         GLsizei length;
         GLchar buffer[128] = {}; // TODO: we should fetch max length from gpu
 
-        GLenum props[2] = {GL_TYPE, GL_LOCATION};
+        GLenum props[2] = {GL_LOCATION, GL_TYPE};
         GLint params[2] = {0};
 
         glGetProgramResourceName(program, GL_PROGRAM_INPUT, i, 128, &length, buffer);
@@ -159,12 +159,14 @@ void Program::parseProgramInputs()
         inputs.push_back(std::make_tuple(params[0], params[1]));
     }
 
+    // Sort by location
     sort(inputs.begin(), inputs.end());
 
     glCreateVertexArrays(1, &this->varray);
+    this->engine->print("- Creating VAO: %d\n", this->varray);
 
     GLsizei currentStride = 0;
-    for(auto const& [type, location] : inputs)
+    for(auto const& [location, type] : inputs)
     {
         auto stride = Utils::getTypeSize(type);
         auto format = Utils::getTypeFormat(type);
@@ -174,6 +176,7 @@ void Program::parseProgramInputs()
         glVertexArrayAttribBinding(this->varray, location, 0);
         
         currentStride += stride;
+        this->engine->print("  - Bound attribute (location: %d, stride: %d, scalars: %d)\n", location, stride, std::get<0>(format));
     }
 
     glVertexArrayVertexBuffer(this->varray, 0, this->engine->buffers[this->params["VBO"]], 0, currentStride);
