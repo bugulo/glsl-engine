@@ -208,16 +208,16 @@ void Program::parseProgramOutputs()
         GLchar buffer[128] = {}; // TODO: we should fetch max length from gpu
 
         glGetProgramResourceName(program, GL_PROGRAM_OUTPUT, i, 128, &length, buffer);
-        auto location = glGetProgramResourceIndex(program, GL_PROGRAM_OUTPUT, buffer);
-        outputs.push_back(std::make_tuple(location, std::string(buffer)));
+        auto index = glGetProgramResourceIndex(program, GL_PROGRAM_OUTPUT, buffer);
+        outputs.push_back(std::make_tuple(index, std::string(buffer)));
     }
 
     glCreateFramebuffers(1, &this->framebuffer);
 
-    for(auto const& [location, name] : outputs)
+    for(auto const& [index, name] : outputs)
     {
         auto texture = this->engine->createTexture(name);
-        glNamedFramebufferTexture(this->framebuffer, GL_COLOR_ATTACHMENT0 + location, texture, 0);
+        glNamedFramebufferTexture(this->framebuffer, GL_COLOR_ATTACHMENT0 + index, texture, 0);
     }
 }
 
