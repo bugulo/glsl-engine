@@ -1,3 +1,7 @@
+#pragma PARAM HEIGHT 500;
+#pragma PARAM WIDTH 500;
+#pragma PARAM TITLE "Color illusion";
+
 layout(std430, binding = 5) volatile buffer MyBuffer {
     uint counter;
 } myBuffer;
