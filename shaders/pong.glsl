@@ -271,6 +271,12 @@ layout(std430, binding = 7) buffer Objects {
 
         void main()
         {
+            // Scene lighting calculation inspired by:
+            /*  @see https://learnopengl.com/Lighting/Basic-Lighting
+                -- LearnOpenGL - Basic Lighting
+                -- author - Joey de Vries
+                -- cited: 2022-04-01 */
+
             vec3 lightPos = vec3(0, 0, 7);
             vec3 objectColor = vec3(1.0, 1.0, 1.0);
             vec3 lightColor = vec3(1, 1, 1);
