@@ -1,3 +1,9 @@
+## Requirements
+- **make**
+- **cmake**
+- **g++**
+- **OpenGL**
+
 ## Build
 ```
 cmake . && make
@@ -6,5 +12,5 @@ cmake . && make
 ## Run
 ```
 cd bin
-./engine <shader-path>
+./engine <shader-file-path>
 ```
