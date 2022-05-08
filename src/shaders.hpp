@@ -193,6 +193,7 @@ void set_drawcommand(uint offset, uint count, uint instances, uint firstIndex, u
 
 const char *mathShaderSource = R"(
     float rand() {
+        // Inspired by: https://thebookofshaders.com/10/
         vec2 seed = vec2(engineBuffer.currentTime, engineBuffer.currentTime);
         return fract(sin(dot(seed, vec2(12.9898, 78.233))) * 43758.5453);
     }
