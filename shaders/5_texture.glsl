@@ -28,6 +28,10 @@ layout(std430, binding = 4) buffer OtherBuffer {
             );
 
             set_drawcommand(0, 3, 1, 0, 0, 0);
+
+            otherBuffer.rotation = 0;
+            otherBuffer.positionX = 0;
+            otherBuffer.positionY = 0;
         }
     #endif
 #endif
